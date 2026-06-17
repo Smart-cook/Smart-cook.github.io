@@ -1,2 +1,258 @@
 # Smart-cook.github.io
 A shopping list for any combination of the 8 dishes in the smart cooking guide.
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Batch Cooking Shopping List</title>
+
+<style>
+body { font-family: Arial; margin: 20px; max-width: 900px; }
+h1 { font-size: 22px; }
+.recipe { margin: 6px 0; }
+button { padding: 10px; margin-top: 10px; cursor: pointer; margin-right: 10px; }
+#output { margin-top: 20px; white-space: pre-wrap; background: #f7f7f7; padding: 15px; }
+.small { color: #666; font-size: 12px; }
+</style>
+</head>
+
+<body>
+
+<h1>Batch Cooking Shopping List Generator</h1>
+<p class="small">Select ANY number of recipes (1–8)</p>
+
+<div id="recipes"></div>
+
+<button onclick="generateList()">Generate Shopping List</button>
+<button onclick="window.print()">Print</button>
+
+<div id="output"></div>
+
+<script>
+
+// =======================
+// 1. RECIPE DATABASE
+// =======================
+
+const recipes = {
+"nigerian_pepper_stew": {
+name: "Nigerian Pepper Stew",
+ingredients: {
+"beef (kg)": {qty: 1.1, cost: 12},
+"red onion": {qty: 4, cost: 1},
+"tomatoes": {qty: 9, cost: 2.1},
+"red pepper": {qty: 6, cost: 4},
+"scotch bonnet": {qty: 2, cost: 0.25},
+"maggi cubes": {qty: 4, cost: 2.5},
+"rosemary tsp": {qty: 2, cost: 0.6},
+"thyme tsp": {qty: 3, cost: 0.85},
+"curry powder tsp": {qty: 2, cost: 1},
+"salt tsp": {qty: 2, cost: 0.5},
+"palm oil (ml)": {qty: 118, cost: 2.5},
+"basil pack": {qty: 1, cost: 0.52}
+}
+},
+
+"butter_chicken": {
+name: "Indian Butter Chicken",
+ingredients: {
+"chicken breast (kg)": {qty: 2, cost: 12.5},
+"red onion": {qty: 4, cost: 1},
+"garlic": {qty: 1, cost: 0.5},
+"ginger (inches)": {qty: 4, cost: 0.75},
+"chilli": {qty: 4, cost: 0.6},
+"lemon": {qty: 1, cost: 0.4},
+"butter (g)": {qty: 100, cost: 2},
+"tomato sauce (ml)": {qty: 1000, cost: 1.5},
+"olive oil (ml)": {qty: 59, cost: 6},
+"yoghurt (ml)": {qty: 237, cost: 0.6},
+"double cream (ml)": {qty: 600, cost: 2.8},
+"garam masala tsp": {qty: 8, cost: 1},
+"cumin tsp": {qty: 8, cost: 0.6},
+"turmeric tsp": {qty: 8, cost: 0.6},
+"cayenne tsp": {qty: 4, cost: 0.6},
+"black pepper tsp": {qty: 2, cost: 1.7},
+"salt tsp": {qty: 8, cost: 0.5}
+}
+},
+
+"japanese_curry_easy": {
+name: "Japanese Curry (Easy)",
+ingredients: {
+"beef (kg)": {qty: 1.1, cost: 12},
+"potatoes": {qty: 4, cost: 2},
+"carrots": {qty: 6, cost: 1.05},
+"brown onion": {qty: 2, cost: 0.7},
+"golden curry roux": {qty: 1, cost: 3.05},
+"salt": {qty: 1, cost: 0.5},
+"rosemary tsp": {qty: 1, cost: 0.6}
+}
+},
+
+"peanut_stew": {
+name: "Peanut Stew",
+ingredients: {
+"chicken drumsticks (kg)": {qty: 2, cost: 4.5},
+"peanut butter (g)": {qty: 340, cost: 2},
+"tomatoes": {qty: 9, cost: 2.1},
+"garlic cloves": {qty: 9, cost: 0.4},
+"scotch bonnet": {qty: 2, cost: 0.25},
+"red onion": {qty: 4, cost: 1},
+"ginger (inches)": {qty: 6, cost: 0.7},
+"cumin tsp": {qty: 3, cost: 0.6},
+"nutmeg tsp": {qty: 3, cost: 0.7},
+"maggi cubes": {qty: 4, cost: 2.5},
+"tomato paste": {qty: 0.75, cost: 0.7},
+"spinach bag": {qty: 1, cost: 1},
+"peanuts pack": {qty: 1, cost: 1}
+}
+},
+
+"moqueca": {
+name: "Moqueca de Camarão",
+ingredients: {
+"shrimp (kg)": {qty: 1, cost: 15},
+"palm oil (ml)": {qty: 118, cost: 2.5},
+"bell peppers": {qty: 6, cost: 0},
+"garlic cloves": {qty: 8, cost: 0.4},
+"tomatoes": {qty: 6, cost: 2.1},
+"coconut milk (ml)": {qty: 800, cost: 1.6},
+"lime": {qty: 1, cost: 0.25},
+"parsley pack": {qty: 1, cost: 0.6},
+"onions": {qty: 2, cost: 1},
+"chilli": {qty: 3, cost: 0.6},
+"maggi cubes": {qty: 2, cost: 2.5}
+}
+},
+
+"fricassee": {
+name: "French Fricassee",
+ingredients: {
+"chicken drumsticks (kg)": {qty: 2, cost: 4.5},
+"carrots": {qty: 6, cost: 0.7},
+"butter (g)": {qty: 113, cost: 2},
+"brown onion": {qty: 4, cost: 1},
+"mushrooms (g)": {qty: 650, cost: 1.7},
+"garlic cloves": {qty: 6, cost: 0.4},
+"cream (ml)": {qty: 600, cost: 2.8},
+"flour": {qty: 2, cost: 0.7},
+"thyme tsp": {qty: 4, cost: 0.85},
+"stock cubes": {qty: 4, cost: 0.7},
+"maggi cubes": {qty: 5, cost: 2.5}
+}
+},
+
+"fesenjan": {
+name: "Persian Fesenjan",
+ingredients: {
+"walnuts (g)": {qty: 800, cost: 7},
+"chicken drumsticks (kg)": {qty: 2, cost: 4.3},
+"red onion": {qty: 4, cost: 1},
+"olive oil (tbsp)": {qty: 4, cost: 6},
+"pomegranate molasses (ml)": {qty: 237, cost: 4},
+"stock cubes": {qty: 3, cost: 0.7},
+"maggi cubes": {qty: 3, cost: 2.5},
+"black pepper tsp": {qty: 4, cost: 1.7},
+"turmeric tsp": {qty: 2, cost: 0.6},
+"saffron tsp": {qty: 1, cost: 3},
+"salt tsp": {qty: 3, cost: 0.5},
+"lime": {qty: 1, cost: 0.25}
+}
+},
+
+"succotash": {
+name: "American Succotash",
+ingredients: {
+"red onion": {qty: 3, cost: 1},
+"lima beans cans": {qty: 2, cost: 1.5},
+"bell peppers": {qty: 6, cost: 4},
+"chorizo (kg)": {qty: 1, cost: 6},
+"green beans pack": {qty: 1, cost: 1.5},
+"corn cups": {qty: 4, cost: 1.5},
+"courgettes": {qty: 3, cost: 2},
+"parsley pack": {qty: 1, cost: 0.52},
+"olive oil (ml)": {qty: 118, cost: 6},
+"black pepper tsp": {qty: 2, cost: 1.7},
+"maggi cubes": {qty: 5, cost: 2.5},
+"salt": {qty: 1, cost: 0.5}
+}
+}
+};
+
+// =======================
+// 2. RENDER UI
+// =======================
+
+const container = document.getElementById("recipes");
+
+for (let key in recipes) {
+const div = document.createElement("div");
+div.className = "recipe";
+div.innerHTML = `
+<label>
+<input type="checkbox" value="${key}" />
+${recipes[key].name}
+</label>`;
+container.appendChild(div);
+}
+
+// =======================
+// 3. GENERATE SHOPPING LIST
+// =======================
+
+function generateList() {
+
+const checked = [...document.querySelectorAll("input[type=checkbox]:checked")]
+.map(el => el.value);
+
+if (checked.length === 0) {
+document.getElementById("output").innerText = "Select at least one recipe.";
+return;
+}
+
+let result = {};
+let totalCost = 0;
+
+checked.forEach(r => {
+const ingredients = recipes[r].ingredients;
+
+for (let item in ingredients) {
+
+if (!result[item]) {
+result[item] = {
+qty: ingredients[item].qty,
+cost: ingredients[item].cost
+};
+} else {
+result[item].qty += ingredients[item].qty;
+result[item].cost += ingredients[item].cost;
+}
+
+// safer cost accumulation (prevents double counting bugs)
+totalCost += ingredients[item].cost;
+}
+});
+
+// =======================
+// 4. OUTPUT
+// =======================
+
+let output = "SHOPPING LIST\n\n";
+
+Object.keys(result)
+.sort()
+.forEach(item => {
+output += `- ${item}: ${result[item].qty}\n`;
+});
+
+output += `\nESTIMATED COST: £${totalCost.toFixed(2)}`;
+
+document.getElementById("output").innerText = output;
+}
+
+</script>
+
+</body>
+</html>
