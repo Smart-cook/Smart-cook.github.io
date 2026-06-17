@@ -21,7 +21,7 @@ button { padding: 10px; margin-top: 10px; cursor: pointer; margin-right: 10px; }
 <body>
 
 <h1>Batch Cooking Shopping List Generator</h1>
-<p class="small">Select ANY number of recipes (1–8)</p>
+<p class="small">Select any combination of recipes</p>
 
 <div id="recipes"></div>
 
@@ -33,12 +33,14 @@ button { padding: 10px; margin-top: 10px; cursor: pointer; margin-right: 10px; }
 <script>
 
 // =======================
-// 1. RECIPE DATABASE
+// RECIPE DATABASE
 // =======================
 
 const recipes = {
+
 "nigerian_pepper_stew": {
 name: "Nigerian Pepper Stew",
+servings: 12,
 ingredients: {
 "beef (kg)": {qty: 1.1, cost: 12},
 "red onion": {qty: 4, cost: 1},
@@ -57,6 +59,7 @@ ingredients: {
 
 "butter_chicken": {
 name: "Indian Butter Chicken",
+servings: 15,
 ingredients: {
 "chicken breast (kg)": {qty: 2, cost: 12.5},
 "red onion": {qty: 4, cost: 1},
@@ -79,7 +82,8 @@ ingredients: {
 },
 
 "japanese_curry_easy": {
-name: "Japanese Curry (Easy)",
+name: "Japanese Curry (Easy Method)",
+servings: 12,
 ingredients: {
 "beef (kg)": {qty: 1.1, cost: 12},
 "potatoes": {qty: 4, cost: 2},
@@ -91,8 +95,30 @@ ingredients: {
 }
 },
 
+// ✅ NEW ADDITION (positioned correctly)
+"japanese_curry_from_scratch": {
+name: "Japanese Curry (From Scratch)",
+servings: 12,
+ingredients: {
+"chicken breast (kg)": {qty: 1.8, cost: 12},
+"brown onion": {qty: 6, cost: 1},
+"carrots": {qty: 6, cost: 0.7},
+"garlic cloves": {qty: 9, cost: 0.5},
+"ginger (g)": {qty: 75, cost: 0.5},
+"maggi cubes": {qty: 5, cost: 2.5},
+"curry powder tbsp": {qty: 6, cost: 3},
+"five spice tsp": {qty: 6, cost: 1},
+"chilli powder tbsp": {qty: 2, cost: 0.6},
+"flour": {qty: 0.5, cost: 0.7},
+"soy sauce tbsp": {qty: 3, cost: 0.6},
+"honey tbsp": {qty: 3, cost: 1},
+"vinegar tsp": {qty: 3, cost: 1}
+}
+},
+
 "peanut_stew": {
 name: "Peanut Stew",
+servings: 11,
 ingredients: {
 "chicken drumsticks (kg)": {qty: 2, cost: 4.5},
 "peanut butter (g)": {qty: 340, cost: 2},
@@ -112,6 +138,7 @@ ingredients: {
 
 "moqueca": {
 name: "Moqueca de Camarão",
+servings: 8,
 ingredients: {
 "shrimp (kg)": {qty: 1, cost: 15},
 "palm oil (ml)": {qty: 118, cost: 2.5},
@@ -129,6 +156,7 @@ ingredients: {
 
 "fricassee": {
 name: "French Fricassee",
+servings: 17,
 ingredients: {
 "chicken drumsticks (kg)": {qty: 2, cost: 4.5},
 "carrots": {qty: 6, cost: 0.7},
@@ -146,6 +174,7 @@ ingredients: {
 
 "fesenjan": {
 name: "Persian Fesenjan",
+servings: 13,
 ingredients: {
 "walnuts (g)": {qty: 800, cost: 7},
 "chicken drumsticks (kg)": {qty: 2, cost: 4.3},
@@ -164,6 +193,7 @@ ingredients: {
 
 "succotash": {
 name: "American Succotash",
+servings: 9,
 ingredients: {
 "red onion": {qty: 3, cost: 1},
 "lima beans cans": {qty: 2, cost: 1.5},
@@ -182,7 +212,7 @@ ingredients: {
 };
 
 // =======================
-// 2. RENDER UI
+// UI
 // =======================
 
 const container = document.getElementById("recipes");
@@ -199,7 +229,7 @@ container.appendChild(div);
 }
 
 // =======================
-// 3. GENERATE SHOPPING LIST
+// GENERATE LOGIC
 // =======================
 
 function generateList() {
@@ -214,31 +244,30 @@ return;
 
 let result = {};
 let totalCost = 0;
+let totalServings = 0;
 
 checked.forEach(r => {
-const ingredients = recipes[r].ingredients;
 
-for (let item in ingredients) {
+const recipe = recipes[r];
+totalServings += recipe.servings;
+
+for (let item in recipe.ingredients) {
 
 if (!result[item]) {
 result[item] = {
-qty: ingredients[item].qty,
-cost: ingredients[item].cost
+qty: recipe.ingredients[item].qty,
+cost: recipe.ingredients[item].cost
 };
 } else {
-result[item].qty += ingredients[item].qty;
-result[item].cost += ingredients[item].cost;
+result[item].qty += recipe.ingredients[item].qty;
+result[item].cost += recipe.ingredients[item].cost;
 }
 
-// safer cost accumulation (prevents double counting bugs)
-totalCost += ingredients[item].cost;
+totalCost += recipe.ingredients[item].cost;
 }
 });
 
-// =======================
-// 4. OUTPUT
-// =======================
-
+// OUTPUT
 let output = "SHOPPING LIST\n\n";
 
 Object.keys(result)
@@ -247,7 +276,9 @@ Object.keys(result)
 output += `- ${item}: ${result[item].qty}\n`;
 });
 
+output += `\nTOTAL SERVINGS: ${totalServings}`;
 output += `\nESTIMATED COST: £${totalCost.toFixed(2)}`;
+output += `\nCOST PER SERVING: £${(totalCost / totalServings).toFixed(2)}`;
 
 document.getElementById("output").innerText = output;
 }
