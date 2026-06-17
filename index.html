@@ -6,19 +6,41 @@
 <title>Batch Cooking Shopping List</title>
 
 <style>
-body { font-family: Arial; margin: 20px; max-width: 900px; }
+body { font-family: Arial, margin: 20px; max-width: 900px; }
 h1 { font-size: 22px; }
-.recipe { margin: 6px 0; }
-button { padding: 10px; margin-top: 10px; cursor: pointer; margin-right: 10px; }
-#output { margin-top: 20px; white-space: pre-wrap; background: #f7f7f7; padding: 15px; }
-.small { color: #666; font-size: 12px; }
+
+.recipe {
+  margin: 10px 0;
+  padding: 10px;
+  background: #f7f7f7;
+  border-radius: 6px;
+}
+
+.small { color: #666; font-size: 12px; margin-top: 5px; }
+
+select { margin-top: 6px; padding: 5px; }
+
+button {
+  padding: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+#output {
+  margin-top: 20px;
+  white-space: pre-wrap;
+  background: #f7f7f7;
+  padding: 15px;
+  border-radius: 6px;
+}
 </style>
 </head>
 
 <body>
 
 <h1>Batch Cooking Shopping List Generator</h1>
-<p class="small">Select any combination of recipes</p>
+<p class="small">Select any combination of recipes + choose options where available</p>
 
 <div id="recipes"></div>
 
@@ -35,6 +57,9 @@ button { padding: 10px; margin-top: 10px; cursor: pointer; margin-right: 10px; }
 
 const recipes = {
 
+// -----------------------
+// 1. Nigerian Pepper Stew
+// -----------------------
 "nigerian_pepper_stew": {
 name: "Nigerian Pepper Stew",
 servings: 12,
@@ -54,6 +79,9 @@ ingredients: {
 }
 },
 
+// -----------------------
+// 2. Indian Butter Chicken
+// -----------------------
 "butter_chicken": {
 name: "Indian Butter Chicken",
 servings: 15,
@@ -78,7 +106,10 @@ ingredients: {
 }
 },
 
-"japanese_curry_easy": {
+// -----------------------
+// 3. Japanese Curry (Easy Method)
+// -----------------------
+"japanese_curry_easy_method": {
 name: "Japanese Curry (Easy Method)",
 servings: 12,
 ingredients: {
@@ -92,7 +123,9 @@ ingredients: {
 }
 },
 
-// ✅ NEW ADDITION (positioned correctly)
+// -----------------------
+// 4. Japanese Curry (From Scratch)
+// -----------------------
 "japanese_curry_from_scratch": {
 name: "Japanese Curry (From Scratch)",
 servings: 12,
@@ -113,11 +146,21 @@ ingredients: {
 }
 },
 
+// -----------------------
+// 5. Peanut Stew (WITH MEAT OPTION)
+// -----------------------
 "peanut_stew": {
 name: "Peanut Stew",
 servings: 11,
+
+options: {
+meat: [
+{ name: "Chicken drumsticks (kg)", cost: 4.5 },
+{ name: "Beef / Goat meat (kg)", cost: 12 }
+]
+},
+
 ingredients: {
-"chicken drumsticks (kg)": {qty: 2, cost: 4.5},
 "peanut butter (g)": {qty: 340, cost: 2},
 "tomatoes": {qty: 9, cost: 2.1},
 "garlic cloves": {qty: 9, cost: 0.4},
@@ -133,13 +176,16 @@ ingredients: {
 }
 },
 
+// -----------------------
+// 6. Moqueca
+// -----------------------
 "moqueca": {
 name: "Moqueca de Camarão",
 servings: 8,
 ingredients: {
 "shrimp (kg)": {qty: 1, cost: 15},
 "palm oil (ml)": {qty: 118, cost: 2.5},
-"bell peppers": {qty: 6, cost: 0},
+"bell peppers": {qty: 6, cost: 4},
 "garlic cloves": {qty: 8, cost: 0.4},
 "tomatoes": {qty: 6, cost: 2.1},
 "coconut milk (ml)": {qty: 800, cost: 1.6},
@@ -151,6 +197,9 @@ ingredients: {
 }
 },
 
+// -----------------------
+// 7. French Fricassee
+// -----------------------
 "fricassee": {
 name: "French Fricassee",
 servings: 17,
@@ -169,6 +218,9 @@ ingredients: {
 }
 },
 
+// -----------------------
+// 8. Persian Fesenjan
+// -----------------------
 "fesenjan": {
 name: "Persian Fesenjan",
 servings: 13,
@@ -188,6 +240,9 @@ ingredients: {
 }
 },
 
+// -----------------------
+// 9. American Succotash
+// -----------------------
 "succotash": {
 name: "American Succotash",
 servings: 9,
@@ -206,6 +261,7 @@ ingredients: {
 "salt": {qty: 1, cost: 0.5}
 }
 }
+
 };
 
 // =======================
@@ -215,18 +271,34 @@ ingredients: {
 const container = document.getElementById("recipes");
 
 for (let key in recipes) {
-const div = document.createElement("div");
-div.className = "recipe";
-div.innerHTML = `
+const r = recipes[key];
+
+let html = `
+<div class="recipe">
 <label>
-<input type="checkbox" value="${key}" />
-${recipes[key].name}
-</label>`;
-container.appendChild(div);
+<input type="checkbox" value="${key}">
+<strong>${r.name}</strong>
+</label>
+`;
+
+if (r.options?.meat) {
+html += `<div class="small">Choose meat:</div>`;
+html += `<select id="opt_${key}">`;
+
+r.options.meat.forEach((m, i) => {
+html += `<option value="${i}">${m.name} (+£${m.cost})</option>`;
+});
+
+html += `</select>`;
+}
+
+html += `</div>`;
+
+container.innerHTML += html;
 }
 
 // =======================
-// GENERATE LOGIC
+// GENERATE
 // =======================
 
 function generateList() {
@@ -248,13 +320,26 @@ checked.forEach(r => {
 const recipe = recipes[r];
 totalServings += recipe.servings;
 
+// meat option
+if (recipe.options?.meat) {
+const sel = document.getElementById(`opt_${r}`);
+const chosen = recipe.options.meat[sel.value];
+
+if (!result[chosen.name]) {
+result[chosen.name] = {qty: 1, cost: chosen.cost};
+} else {
+result[chosen.name].qty += 1;
+result[chosen.name].cost += chosen.cost;
+}
+
+totalCost += chosen.cost;
+}
+
+// ingredients
 for (let item in recipe.ingredients) {
 
 if (!result[item]) {
-result[item] = {
-qty: recipe.ingredients[item].qty,
-cost: recipe.ingredients[item].cost
-};
+result[item] = {...recipe.ingredients[item]};
 } else {
 result[item].qty += recipe.ingredients[item].qty;
 result[item].cost += recipe.ingredients[item].cost;
@@ -267,9 +352,7 @@ totalCost += recipe.ingredients[item].cost;
 // OUTPUT
 let output = "SHOPPING LIST\n\n";
 
-Object.keys(result)
-.sort()
-.forEach(item => {
+Object.keys(result).sort().forEach(item => {
 output += `- ${item}: ${result[item].qty}\n`;
 });
 
