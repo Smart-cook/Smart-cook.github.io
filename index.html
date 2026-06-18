@@ -48,7 +48,7 @@ button {
 <body>
 
 <h1>Batch Cooking Shopping List Generator</h1>
-<p class="small intro">Select any recipes. Meat choices and optional ingredients are included only when selected. Estimated cost is based on supermarket packs/bottles/jars needed.</p>
+<p class="small intro">Select any recipes. Meat choices and optional ingredients are included only when selected.</p>
 
 <div id="recipes"></div>
 
@@ -58,70 +58,63 @@ button {
 <div id="output"></div>
 
 <script>
-const purchasePacks = {
-  oliveOil: { label: "olive oil", packQty: 750, unit: "ml", packLabel: "750 ml bottle", price: 6 },
-  palmOil: { label: "palm oil", packQty: 450, unit: "ml", packLabel: "450 ml bottle", price: 2.5 },
-  maggi: { label: "Maggi/shrimp seasoning cubes", packQty: 100, unit: "cubes", packLabel: "100-cube pack", price: 2.5 },
-  chickenStock: { label: "chicken stock cubes", packQty: 12, unit: "cubes", packLabel: "12-cube pack", price: 0.7 },
-  onions: { label: "onions", packQty: 8, unit: "onions", packLabel: "pack of about 8 onions", price: 1 },
-  tomatoes: { label: "tomatoes", packQty: 9, unit: "tomatoes", packLabel: "net of about 9 tomatoes", price: 2.1 },
-  carrots: { label: "carrots", packQty: 8, unit: "carrots", packLabel: "pack of about 8 carrots", price: 1.05 },
-  garlic: { label: "garlic", packQty: 11, unit: "cloves", packLabel: "bulb of about 11 cloves", price: 0.5 },
-  butter: { label: "butter", packQty: 240, unit: "g", packLabel: "240 g pack", price: 2 },
-  salt: { label: "salt", packQty: 750, unit: "g", packLabel: "750 g container", price: 0.5 },
-  flour: { label: "flour", packQty: 1500, unit: "g", packLabel: "1.5 kg bag", price: 0.7 },
-  blackPepper: { label: "ground black pepper", packQty: 100, unit: "g", packLabel: "100 g container", price: 1.7 },
-  mixedBellPeppers: { label: "mixed colour bell peppers", packQty: 3, unit: "peppers", packLabel: "mixed pack of 3 peppers", price: 1.75 }
+const packs = {
+  oliveOil: { label: "olive oil", size: 750, unit: "ml", price: 6, category: "Oils, Sauces & Pantry" },
+  palmOil: { label: "palm oil", size: 450, unit: "ml", price: 2.5, category: "Oils, Sauces & Pantry" },
+  maggi: { label: "Maggi/shrimp seasoning cubes", size: 100, unit: "cubes", price: 2.5, category: "Seasonings, Herbs & Spices" },
+  chickenStock: { label: "chicken stock cubes", size: 12, unit: "cubes", price: 0.7, category: "Seasonings, Herbs & Spices" },
+  onions: { label: "onions", size: 8, unit: "onions", price: 1, category: "Vegetables" },
+  tomatoes: { label: "tomatoes", size: 9, unit: "tomatoes", price: 2.1, category: "Vegetables" },
+  carrots: { label: "carrots", size: 8, unit: "carrots", price: 1.05, category: "Vegetables" },
+  garlic: { label: "garlic", size: 11, unit: "cloves", price: 0.5, category: "Vegetables" },
+  butter: { label: "butter", size: 240, unit: "g", price: 2, category: "Dairy" },
+  flour: { label: "flour", size: 1500, unit: "g", price: 0.7, category: "Oils, Sauces & Pantry" },
+  salt: { label: "salt", size: 750, unit: "g", price: 0.5, category: "Seasonings, Herbs & Spices" },
+  blackPepper: { label: "ground black pepper", size: 100, unit: "g", price: 1.7, category: "Seasonings, Herbs & Spices" },
+  mixedBellPeppers: { label: "mixed colour bell peppers", size: 3, unit: "peppers", price: 1.75, category: "Vegetables" },
+
+  rosemary: { label: "rosemary", size: 55, unit: "g", price: 0.6, category: "Seasonings, Herbs & Spices" },
+  thyme: { label: "thyme", size: 55, unit: "g", price: 0.85, category: "Seasonings, Herbs & Spices" },
+  driedThyme: { label: "dried thyme", size: 55, unit: "g", price: 0.85, category: "Seasonings, Herbs & Spices" },
+  curryPowder: { label: "curry powder", size: 55, unit: "g", price: 1, category: "Seasonings, Herbs & Spices" },
+  garamMasala: { label: "garam masala", size: 55, unit: "g", price: 1, category: "Seasonings, Herbs & Spices" },
+  groundCoriander: { label: "ground coriander", size: 55, unit: "g", price: 0.7, category: "Seasonings, Herbs & Spices" },
+  groundCumin: { label: "ground cumin", size: 55, unit: "g", price: 0.6, category: "Seasonings, Herbs & Spices" },
+  groundTurmeric: { label: "ground turmeric", size: 55, unit: "g", price: 0.6, category: "Seasonings, Herbs & Spices" },
+  cayennePepper: { label: "cayenne pepper", size: 55, unit: "g", price: 0.6, category: "Seasonings, Herbs & Spices" },
+  japaneseKatsuCurryPowder: { label: "Japanese/Katsu curry powder", size: 55, unit: "g", price: 3, category: "Seasonings, Herbs & Spices" },
+  chinese5Spice: { label: "Chinese 5 spice", size: 55, unit: "g", price: 1, category: "Seasonings, Herbs & Spices" },
+  redChilliPowder: { label: "red chilli powder", size: 55, unit: "g", price: 0.6, category: "Seasonings, Herbs & Spices" },
+  groundNutmeg: { label: "ground nutmeg", size: 55, unit: "g", price: 0.7, category: "Seasonings, Herbs & Spices" },
+  mustardPowder: { label: "mustard powder", size: 55, unit: "g", price: 1.5, category: "Seasonings, Herbs & Spices" },
+  cinnamon: { label: "cinnamon powder", size: 55, unit: "g", price: 0.7, category: "Seasonings, Herbs & Spices" },
+  cardamom: { label: "cardamom powder", size: 55, unit: "g", price: 3, category: "Seasonings, Herbs & Spices" },
+  saffron: { label: "saffron", size: 55, unit: "g", price: 3, category: "Seasonings, Herbs & Spices" }
 };
 
-function tspToG(tsp) { return tsp * 5; }
-function tbspToG(tbsp) { return tbsp * 15; }
-function cupsFlourToG(cups) { return cups * 120; }
-function cupsButterToG(cups) { return cups * 227; }
-
-function spicePack(label, price) {
-  return { label, packQty: 55, unit: "g", packLabel: "55 g jar/condiment", price };
-}
-
-const spicePacks = {
-  rosemary: spicePack("rosemary", 0.6),
-  thyme: spicePack("thyme", 0.85),
-  driedThyme: spicePack("dried thyme", 0.85),
-  curryPowder: spicePack("curry powder", 1),
-  garamMasala: spicePack("garam masala", 1),
-  groundCoriander: spicePack("ground coriander", 0.7),
-  groundCumin: spicePack("ground cumin", 0.6),
-  groundTurmeric: spicePack("ground turmeric", 0.6),
-  cayennePepper: spicePack("cayenne pepper", 0.6),
-  japaneseKatsuCurryPowder: spicePack("Japanese/Katsu curry powder", 3),
-  chinese5Spice: spicePack("Chinese 5 spice", 1),
-  redChilliPowder: spicePack("red chilli powder", 0.6),
-  groundNutmeg: spicePack("ground nutmeg", 0.7),
-  mustardPowder: spicePack("mustard powder", 1.5),
-  cinnamon: spicePack("cinnamon powder", 0.7),
-  cardamom: spicePack("cardamom powder", 3),
-  saffron: spicePack("saffron", 3)
-};
-
-const allPacks = { ...purchasePacks, ...spicePacks };
+function tspToG(x) { return x * 5; }
+function tbspToG(x) { return x * 15; }
+function cupToMl(x) { return x * 236; }
+function cupFlourToG(x) { return x * 120; }
+function cupButterToG(x) { return x * 227; }
 
 const recipes = {
   nigerian_pepper_stew: {
     name: "Nigerian Pepper Stew",
     servings: 12,
     ingredients: [
-      { name: "lean diced beef", qty: "1.1 kg", amount: 1.1, unit: "kg", directCost: 12 },
-      { name: "red onions", qty: "4", amount: 4, unit: "onions", pack: "onions" },
-      { name: "tomatoes", qty: "9", amount: 9, unit: "tomatoes", pack: "tomatoes" },
-      { name: "red peppers", qty: "6", amount: 6, unit: "peppers", directCost: 4 },
-      { name: "scotch bonnet peppers", qty: "1–2", amount: 2, unit: "peppers", directCost: 0.25 },
-      { name: "Maggi seasoning cubes", qty: "4 cubes", amount: 4, unit: "cubes", pack: "maggi" },
-      { name: "rosemary", qty: "2 tsp", amount: tspToG(2), unit: "g", pack: "rosemary", displayAmount: 2, displayUnit: "tsp" },
-      { name: "thyme", qty: "3 tsp", amount: tspToG(3), unit: "g", pack: "thyme", displayAmount: 3, displayUnit: "tsp" },
-      { name: "curry powder", qty: "2 tsp", amount: tspToG(2), unit: "g", pack: "curryPowder", displayAmount: 2, displayUnit: "tsp" },
-      { name: "salt", qty: "2 tsp", amount: tspToG(2), unit: "g", pack: "salt", displayAmount: 2, displayUnit: "tsp" },
-      { name: "palm oil", qty: "1/2 cup (118 ml)", amount: 118, unit: "ml", pack: "palmOil" },
-      { name: "fresh basil", qty: "1 packet", amount: 1, unit: "packet", directCost: 0.52 }
+      item("lean diced beef", "Meat & Seafood", 1.1, "kg", 12),
+      packItem("red onions", "onions", 4, "onions"),
+      packItem("tomatoes", "tomatoes", 9, "tomatoes"),
+      item("red peppers", "Vegetables", 6, "peppers", 4),
+      item("scotch bonnet peppers", "Vegetables", "1–2", "peppers", 0.25),
+      packItem("Maggi seasoning cubes", "maggi", 4, "cubes"),
+      spice("rosemary", "rosemary", 2, "tsp"),
+      spice("thyme", "thyme", 3, "tsp"),
+      spice("curry powder", "curryPowder", 2, "tsp"),
+      salt(2, "tsp"),
+      packItem("palm oil", "palmOil", 118, "ml"),
+      item("fresh basil", "Fresh Herbs", 1, "packet", 0.52)
     ]
   },
 
@@ -129,26 +122,26 @@ const recipes = {
     name: "Indian Butter Chicken",
     servings: 15,
     ingredients: [
-      { name: "chicken breast", qty: "2 kg", amount: 2, unit: "kg", directCost: 12.5 },
-      { name: "red onions", qty: "4 medium", amount: 4, unit: "onions", pack: "onions" },
-      { name: "garlic", qty: "1 whole garlic", amount: 11, unit: "cloves", pack: "garlic" },
-      { name: "ginger", qty: "4 inches", amount: 4, unit: "inches", directCost: 0.75 },
-      { name: "red chilli peppers", qty: "3–4", amount: 4, unit: "peppers", directCost: 0.6 },
-      { name: "lemon", qty: "1", amount: 1, unit: "lemon", directCost: 0.4 },
-      { name: "fresh parsley", qty: "1 packet", amount: 1, unit: "packet", directCost: 0.52 },
-      { name: "salted butter", qty: "100 g", amount: 100, unit: "g", pack: "butter" },
-      { name: "tomato sauce", qty: "1000 ml", amount: 1000, unit: "ml", directCost: 1.5 },
-      { name: "olive oil", qty: "59 ml + 1 tbsp (approx. 74 ml)", amount: 74, unit: "ml", pack: "oliveOil" },
-      { name: "creamy natural yoghurt", qty: "237 ml", amount: 237, unit: "ml", directCost: 0.6 },
-      { name: "double cream", qty: "600 ml", amount: 600, unit: "ml", directCost: 2.8 },
-      { name: "salt", qty: "8 tsp", amount: tspToG(8), unit: "g", pack: "salt", displayAmount: 8, displayUnit: "tsp" },
-      { name: "garam masala", qty: "8 tsp", amount: tspToG(8), unit: "g", pack: "garamMasala", displayAmount: 8, displayUnit: "tsp" },
-      { name: "ground coriander", qty: "4 tsp", amount: tspToG(4), unit: "g", pack: "groundCoriander", displayAmount: 4, displayUnit: "tsp" },
-      { name: "ground cumin", qty: "8 tsp", amount: tspToG(8), unit: "g", pack: "groundCumin", displayAmount: 8, displayUnit: "tsp" },
-      { name: "ground turmeric", qty: "8 tsp", amount: tspToG(8), unit: "g", pack: "groundTurmeric", displayAmount: 8, displayUnit: "tsp" },
-      { name: "cayenne pepper", qty: "4 tsp", amount: tspToG(4), unit: "g", pack: "cayennePepper", displayAmount: 4, displayUnit: "tsp" },
-      { name: "ground black pepper", qty: "2 tsp", amount: tspToG(2), unit: "g", pack: "blackPepper", displayAmount: 2, displayUnit: "tsp" },
-      { name: "cling film", qty: "1 box", amount: 1, unit: "box", directCost: 1 }
+      item("chicken breast", "Meat & Seafood", 2, "kg", 12.5),
+      packItem("red onions", "onions", 4, "onions"),
+      packItem("garlic", "garlic", 11, "cloves"),
+      item("ginger", "Vegetables", 4, "inches", 0.75),
+      item("red chilli peppers", "Vegetables", "3–4", "peppers", 0.6),
+      item("lemon", "Fruit", 1, "lemon", 0.4),
+      item("fresh parsley", "Fresh Herbs", 1, "packet", 0.52),
+      packItem("salted butter", "butter", 100, "g"),
+      item("tomato sauce", "Oils, Sauces & Pantry", 1000, "ml", 1.5),
+      packItem("olive oil", "oliveOil", 74, "ml"),
+      item("creamy natural yoghurt", "Dairy", 237, "ml", 0.6),
+      item("double cream", "Dairy", 600, "ml", 2.8),
+      salt(8, "tsp"),
+      spice("garam masala", "garamMasala", 8, "tsp"),
+      spice("ground coriander", "groundCoriander", 4, "tsp"),
+      spice("ground cumin", "groundCumin", 8, "tsp"),
+      spice("ground turmeric", "groundTurmeric", 8, "tsp"),
+      spice("cayenne pepper", "cayennePepper", 4, "tsp"),
+      pepper(2, "tsp"),
+      item("cling film", "Other", 1, "box", 1)
     ]
   },
 
@@ -156,17 +149,18 @@ const recipes = {
     name: "Japanese Curry (Easy Method)",
     servings: 12,
     ingredients: [
-      { name: "beef", qty: "1.1 kg", amount: 1.1, unit: "kg", directCost: 12 },
-      { name: "potatoes", qty: "4", amount: 4, unit: "potatoes", directCost: 2 },
-      { name: "carrots", qty: "6", amount: 6, unit: "carrots", pack: "carrots" },
-      { name: "brown onions", qty: "2", amount: 2, unit: "onions", pack: "onions" },
-      { name: "Golden curry roux blocks", qty: "1 pack", amount: 1, unit: "pack", directCost: 3.05 },
-      { name: "salt", qty: "pinch", amount: 1, unit: "g", pack: "salt", displayAmount: "pinch", displayUnit: "" },
-      { name: "rosemary", qty: "1 tsp", amount: tspToG(1), unit: "g", pack: "rosemary", displayAmount: 1, displayUnit: "tsp" }
+      item("beef", "Meat & Seafood", 1.1, "kg", 12),
+      item("potatoes", "Vegetables", 4, "potatoes", 2),
+      packItem("carrots", "carrots", 6, "carrots"),
+      packItem("brown onions", "onions", 2, "onions"),
+      item("Golden curry roux blocks", "Oils, Sauces & Pantry", 1, "pack", 3.05),
+      salt(0.25, "tsp"),
+      spice("rosemary", "rosemary", 1, "tsp"),
+      packItem("olive oil", "oliveOil", 118, "ml")
     ],
     optional: [
-      { name: "spring onion", qty: "1 bunch", amount: 1, unit: "bunch", directCost: 0.7 },
-      { name: "sesame seeds", qty: "1 pack", amount: 1, unit: "pack", directCost: 1.2 }
+      item("spring onion", "Fresh Herbs", 1, "bunch", 0.7),
+      item("sesame seeds", "Oils, Sauces & Pantry", 1, "pack", 1.2)
     ]
   },
 
@@ -174,24 +168,24 @@ const recipes = {
     name: "Japanese Curry (From Scratch)",
     servings: 12,
     ingredients: [
-      { name: "chicken breast fillets", qty: "1.8 kg", amount: 1.8, unit: "kg", directCost: 12 },
-      { name: "brown onions", qty: "6", amount: 6, unit: "onions", pack: "onions" },
-      { name: "carrots", qty: "6", amount: 6, unit: "carrots", pack: "carrots" },
-      { name: "garlic cloves", qty: "9", amount: 9, unit: "cloves", pack: "garlic" },
-      { name: "ginger", qty: "75 g", amount: 75, unit: "g", directCost: 0.5 },
-      { name: "Maggi seasoning cubes", qty: "5 cubes", amount: 5, unit: "cubes", pack: "maggi" },
-      { name: "Japanese/Katsu curry powder", qty: "6 tbsp", amount: tbspToG(6), unit: "g", pack: "japaneseKatsuCurryPowder", displayAmount: 6, displayUnit: "tbsp" },
-      { name: "Chinese 5 spice", qty: "6 tsp", amount: tspToG(6), unit: "g", pack: "chinese5Spice", displayAmount: 6, displayUnit: "tsp" },
-      { name: "red chilli powder", qty: "2 tbsp", amount: tbspToG(2), unit: "g", pack: "redChilliPowder", displayAmount: 2, displayUnit: "tbsp" },
-      { name: "salt", qty: "1 tsp", amount: tspToG(1), unit: "g", pack: "salt", displayAmount: 1, displayUnit: "tsp" },
-      { name: "flour", qty: "1/2 cup", amount: cupsFlourToG(0.5), unit: "g", pack: "flour", displayAmount: "1/2", displayUnit: "cup" },
-      { name: "soy sauce", qty: "3 tbsp", amount: 3, unit: "tbsp", directCost: 0.6 },
-      { name: "honey", qty: "3 tbsp", amount: 3, unit: "tbsp", directCost: 1 },
-      { name: "distilled vinegar", qty: "3 tsp", amount: 3, unit: "tsp", directCost: 0.4 }
+      item("chicken breast fillets", "Meat & Seafood", 1.8, "kg", 12),
+      packItem("brown onions", "onions", 6, "onions"),
+      packItem("carrots", "carrots", 6, "carrots"),
+      packItem("garlic cloves", "garlic", 9, "cloves"),
+      item("ginger", "Vegetables", 75, "g", 0.5),
+      packItem("Maggi seasoning cubes", "maggi", 5, "cubes"),
+      spice("Japanese/Katsu curry powder", "japaneseKatsuCurryPowder", 6, "tbsp"),
+      spice("Chinese 5 spice", "chinese5Spice", 6, "tsp"),
+      spice("red chilli powder", "redChilliPowder", 2, "tbsp"),
+      salt(1, "tsp"),
+      packItem("flour", "flour", cupFlourToG(0.5), "g"),
+      item("soy sauce", "Oils, Sauces & Pantry", 3, "tbsp", 0.6),
+      item("honey", "Oils, Sauces & Pantry", 3, "tbsp", 1),
+      item("distilled vinegar", "Oils, Sauces & Pantry", 3, "tsp", 0.4)
     ],
     optional: [
-      { name: "spring onion", qty: "1 bunch", amount: 1, unit: "bunch", directCost: 0.7 },
-      { name: "sesame seeds", qty: "1 pack", amount: 1, unit: "pack", directCost: 1.2 }
+      item("spring onion", "Fresh Herbs", 1, "bunch", 0.7),
+      item("sesame seeds", "Oils, Sauces & Pantry", 1, "pack", 1.2)
     ]
   },
 
@@ -200,23 +194,23 @@ const recipes = {
     servings: 11,
     options: {
       meat: [
-        { name: "chicken drumsticks", qty: "2 kg", amount: 2, unit: "kg", directCost: 4.5 },
-        { name: "beef/goat meat", qty: "1.1 kg", amount: 1.1, unit: "kg", directCost: 12 }
+        item("chicken drumsticks", "Meat & Seafood", 2, "kg", 4.5),
+        item("beef/goat meat", "Meat & Seafood", 1.1, "kg", 12)
       ]
     },
     ingredients: [
-      { name: "smooth peanut butter", qty: "340 g", amount: 340, unit: "g", directCost: 2 },
-      { name: "tomatoes", qty: "9", amount: 9, unit: "tomatoes", pack: "tomatoes" },
-      { name: "garlic cloves", qty: "9", amount: 9, unit: "cloves", pack: "garlic" },
-      { name: "scotch bonnet peppers", qty: "1–2", amount: 2, unit: "peppers", directCost: 0.25 },
-      { name: "red onions", qty: "4", amount: 4, unit: "onions", pack: "onions" },
-      { name: "ginger", qty: "6 inches", amount: 6, unit: "inches", directCost: 0.7 },
-      { name: "ground cumin", qty: "3 tsp", amount: tspToG(3), unit: "g", pack: "groundCumin", displayAmount: 3, displayUnit: "tsp" },
-      { name: "ground nutmeg", qty: "3 tsp", amount: tspToG(3), unit: "g", pack: "groundNutmeg", displayAmount: 3, displayUnit: "tsp" },
-      { name: "Maggi seasoning cubes", qty: "4 cubes", amount: 4, unit: "cubes", pack: "maggi" },
-      { name: "tomato paste", qty: "3/4 cup", amount: 0.75, unit: "cup", directCost: 0.7 },
-      { name: "fresh baby spinach", qty: "1 bag", amount: 1, unit: "bag", directCost: 1 },
-      { name: "peanuts", qty: "1 packet", amount: 1, unit: "packet", directCost: 1 }
+      item("smooth peanut butter", "Oils, Sauces & Pantry", 340, "g", 2),
+      packItem("tomatoes", "tomatoes", 9, "tomatoes"),
+      packItem("garlic cloves", "garlic", 9, "cloves"),
+      item("scotch bonnet peppers", "Vegetables", "1–2", "peppers", 0.25),
+      packItem("red onions", "onions", 4, "onions"),
+      item("ginger", "Vegetables", 6, "inches", 0.7),
+      spice("ground cumin", "groundCumin", 3, "tsp"),
+      spice("ground nutmeg", "groundNutmeg", 3, "tsp"),
+      packItem("Maggi seasoning cubes", "maggi", 4, "cubes"),
+      item("tomato paste", "Oils, Sauces & Pantry", 0.75, "cup", 0.7),
+      item("fresh baby spinach", "Vegetables", 1, "bag", 1),
+      item("peanuts", "Oils, Sauces & Pantry", 1, "packet", 1)
     ]
   },
 
@@ -224,21 +218,21 @@ const recipes = {
     name: "Brazilian Moqueca de Camarão",
     servings: 8,
     ingredients: [
-      { name: "shrimp", qty: "1 kg", amount: 1, unit: "kg", directCost: 15 },
-      { name: "palm oil", qty: "1/2 cup (118 ml)", amount: 118, unit: "ml", pack: "palmOil" },
-      { name: "mixed colour bell peppers", qty: "2 red + 2 yellow + 2 green", amount: 6, unit: "peppers", pack: "mixedBellPeppers" },
-      { name: "garlic cloves", qty: "8", amount: 8, unit: "cloves", pack: "garlic" },
-      { name: "tomatoes", qty: "5–6", amount: 6, unit: "tomatoes", pack: "tomatoes" },
-      { name: "full fat coconut milk", qty: "2 x 400 ml cans", amount: 2, unit: "cans", directCost: 1.6 },
-      { name: "lime", qty: "1", amount: 1, unit: "lime", directCost: 0.25 },
-      { name: "fresh parsley", qty: "1 packet", amount: 1, unit: "packet", directCost: 0.6 },
-      { name: "onions", qty: "2", amount: 2, unit: "onions", pack: "onions" },
-      { name: "red chillies", qty: "3", amount: 3, unit: "chillies", directCost: 0.6 },
-      { name: "Maggi/shrimp seasoning cubes", qty: "2 cubes", amount: 2, unit: "cubes", pack: "maggi" },
-      { name: "ground coriander", qty: "3 tsp", amount: tspToG(3), unit: "g", pack: "groundCoriander", displayAmount: 3, displayUnit: "tsp" },
-      { name: "ground cumin", qty: "4 tsp", amount: tspToG(4), unit: "g", pack: "groundCumin", displayAmount: 4, displayUnit: "tsp" },
-      { name: "ground black pepper", qty: "3 tsp", amount: tspToG(3), unit: "g", pack: "blackPepper", displayAmount: 3, displayUnit: "tsp" },
-      { name: "salt", qty: "4 tsp", amount: tspToG(4), unit: "g", pack: "salt", displayAmount: 4, displayUnit: "tsp" }
+      item("shrimp", "Meat & Seafood", 1, "kg", 15),
+      packItem("palm oil", "palmOil", 118, "ml"),
+      packItem("mixed colour bell peppers", "mixedBellPeppers", 6, "peppers"),
+      packItem("garlic cloves", "garlic", 8, "cloves"),
+      packItem("tomatoes", "tomatoes", 6, "tomatoes"),
+      item("full fat coconut milk", "Oils, Sauces & Pantry", "2 x 400 ml cans", "", 1.6),
+      item("lime", "Fruit", 1, "lime", 0.25),
+      item("fresh parsley", "Fresh Herbs", 1, "packet", 0.6),
+      packItem("onions", "onions", 2, "onions"),
+      item("red chillies", "Vegetables", 3, "chillies", 0.6),
+      packItem("Maggi/shrimp seasoning cubes", "maggi", 2, "cubes"),
+      spice("ground coriander", "groundCoriander", 3, "tsp"),
+      spice("ground cumin", "groundCumin", 4, "tsp"),
+      pepper(3, "tsp"),
+      salt(4, "tsp")
     ]
   },
 
@@ -246,24 +240,24 @@ const recipes = {
     name: "French Fricassee",
     servings: 17,
     ingredients: [
-      { name: "chicken drumsticks", qty: "2 kg", amount: 2, unit: "kg", directCost: 4.5 },
-      { name: "carrots", qty: "6", amount: 6, unit: "carrots", pack: "carrots" },
-      { name: "salt", qty: "1 tsp", amount: tspToG(1), unit: "g", pack: "salt", displayAmount: 1, displayUnit: "tsp" },
-      { name: "ground black pepper", qty: "7 tsp", amount: tspToG(7), unit: "g", pack: "blackPepper", displayAmount: 7, displayUnit: "tsp" },
-      { name: "mustard powder", qty: "4 tsp", amount: tspToG(4), unit: "g", pack: "mustardPowder", displayAmount: 4, displayUnit: "tsp" },
-      { name: "butter", qty: "1/2 cup", amount: cupsButterToG(0.5), unit: "g", pack: "butter", displayAmount: "1/2", displayUnit: "cup" },
-      { name: "brown onions", qty: "4", amount: 4, unit: "onions", pack: "onions" },
-      { name: "mushrooms", qty: "650 g", amount: 650, unit: "g", directCost: 1.7 },
-      { name: "dried thyme", qty: "4 tsp", amount: tspToG(4), unit: "g", pack: "driedThyme", displayAmount: 4, displayUnit: "tsp" },
-      { name: "garlic cloves", qty: "6", amount: 6, unit: "cloves", pack: "garlic" },
-      { name: "flour", qty: "2 cups", amount: cupsFlourToG(2), unit: "g", pack: "flour", displayAmount: 2, displayUnit: "cups" },
-      { name: "chicken stock cubes", qty: "4 cubes", amount: 4, unit: "cubes", pack: "chickenStock" },
-      { name: "Maggi seasoning cubes", qty: "5 cubes", amount: 5, unit: "cubes", pack: "maggi" },
-      { name: "double cream", qty: "600 ml", amount: 600, unit: "ml", directCost: 2.8 }
+      item("chicken drumsticks", "Meat & Seafood", 2, "kg", 4.5),
+      packItem("carrots", "carrots", 6, "carrots"),
+      salt(1, "tsp"),
+      pepper(7, "tsp"),
+      spice("mustard powder", "mustardPowder", 4, "tsp"),
+      packItem("butter", "butter", cupButterToG(0.5), "g"),
+      packItem("brown onions", "onions", 4, "onions"),
+      item("mushrooms", "Vegetables", 650, "g", 1.7),
+      spice("dried thyme", "driedThyme", 4, "tsp"),
+      packItem("garlic cloves", "garlic", 6, "cloves"),
+      packItem("flour", "flour", cupFlourToG(2), "g"),
+      packItem("chicken stock cubes", "chickenStock", 4, "cubes"),
+      packItem("Maggi seasoning cubes", "maggi", 5, "cubes"),
+      item("double cream", "Dairy", 600, "ml", 2.8)
     ],
     optional: [
-      { name: "fresh thyme", qty: "1 packet", amount: 1, unit: "packet", directCost: 0.52 },
-      { name: "lemon", qty: "1", amount: 1, unit: "lemon", directCost: 0.4 }
+      item("fresh thyme", "Fresh Herbs", 1, "packet", 0.52),
+      item("lemon", "Fruit", 1, "lemon", 0.4)
     ]
   },
 
@@ -271,24 +265,24 @@ const recipes = {
     name: "Persian Fesenjan",
     servings: 13,
     ingredients: [
-      { name: "walnuts", qty: "800 g", amount: 800, unit: "g", directCost: 7 },
-      { name: "chicken drumsticks", qty: "2 kg", amount: 2, unit: "kg", directCost: 4.5 },
-      { name: "red or brown onions", qty: "4", amount: 4, unit: "onions", pack: "onions" },
-      { name: "olive oil", qty: "4 tbsp (59 ml)", amount: 59, unit: "ml", pack: "oliveOil" },
-      { name: "pomegranate molasses", qty: "1 cup (237 ml)", amount: 237, unit: "ml", directCost: 4 },
-      { name: "chicken stock cubes", qty: "3 cubes", amount: 3, unit: "cubes", pack: "chickenStock" },
-      { name: "Maggi seasoning cubes", qty: "3 cubes", amount: 3, unit: "cubes", pack: "maggi" },
-      { name: "ground black pepper", qty: "4 tsp", amount: tspToG(4), unit: "g", pack: "blackPepper", displayAmount: 4, displayUnit: "tsp" },
-      { name: "ground turmeric", qty: "2 tsp", amount: tspToG(2), unit: "g", pack: "groundTurmeric", displayAmount: 2, displayUnit: "tsp" },
-      { name: "saffron", qty: "1 tsp", amount: tspToG(1), unit: "g", pack: "saffron", displayAmount: 1, displayUnit: "tsp" },
-      { name: "salt", qty: "3 tsp", amount: tspToG(3), unit: "g", pack: "salt", displayAmount: 3, displayUnit: "tsp" },
-      { name: "lime", qty: "1", amount: 1, unit: "lime", directCost: 0.25 }
+      item("walnuts", "Oils, Sauces & Pantry", 800, "g", 7),
+      item("chicken drumsticks", "Meat & Seafood", 2, "kg", 4.5),
+      packItem("red or brown onions", "onions", 4, "onions"),
+      packItem("olive oil", "oliveOil", 59, "ml"),
+      item("pomegranate molasses", "Oils, Sauces & Pantry", 237, "ml", 4),
+      packItem("chicken stock cubes", "chickenStock", 3, "cubes"),
+      packItem("Maggi seasoning cubes", "maggi", 3, "cubes"),
+      pepper(4, "tsp"),
+      spice("ground turmeric", "groundTurmeric", 2, "tsp"),
+      spice("saffron", "saffron", 1, "tsp"),
+      salt(3, "tsp"),
+      item("lime", "Fruit", 1, "lime", 0.25)
     ],
     optional: [
-      { name: "cinnamon powder", qty: "2 tsp", amount: tspToG(2), unit: "g", pack: "cinnamon", displayAmount: 2, displayUnit: "tsp" },
-      { name: "cardamom powder", qty: "2 tsp", amount: tspToG(2), unit: "g", pack: "cardamom", displayAmount: 2, displayUnit: "tsp" },
-      { name: "cayenne pepper", qty: "1 tsp", amount: tspToG(1), unit: "g", pack: "cayennePepper", displayAmount: 1, displayUnit: "tsp" },
-      { name: "pomegranate", qty: "1", amount: 1, unit: "pomegranate", directCost: 1 }
+      spice("cinnamon powder", "cinnamon", 2, "tsp"),
+      spice("cardamom powder", "cardamom", 2, "tsp"),
+      spice("cayenne pepper", "cayennePepper", 1, "tsp"),
+      item("pomegranate", "Fruit", 1, "pomegranate", 1)
     ]
   },
 
@@ -296,21 +290,42 @@ const recipes = {
     name: "American Succotash",
     servings: 9,
     ingredients: [
-      { name: "red onions", qty: "3", amount: 3, unit: "onions", pack: "onions" },
-      { name: "lima beans or butter beans", qty: "2 cans", amount: 2, unit: "cans", directCost: 1.5 },
-      { name: "bell peppers", qty: "6", amount: 6, unit: "peppers", directCost: 4 },
-      { name: "chorizo sausage", qty: "1 kg", amount: 1, unit: "kg", directCost: 6 },
-      { name: "green beans", qty: "1 packet", amount: 1, unit: "packet", directCost: 1.5 },
-      { name: "sweet corn kernels", qty: "4 cups", amount: 4, unit: "cups", directCost: 1.5 },
-      { name: "courgettes", qty: "3", amount: 3, unit: "courgettes", directCost: 2 },
-      { name: "fresh parsley", qty: "1 packet", amount: 1, unit: "packet", directCost: 0.52 },
-      { name: "olive oil", qty: "1/2 cup (118 ml)", amount: 118, unit: "ml", pack: "oliveOil" },
-      { name: "ground black pepper", qty: "2 tsp", amount: tspToG(2), unit: "g", pack: "blackPepper", displayAmount: 2, displayUnit: "tsp" },
-      { name: "Maggi seasoning cubes", qty: "5 cubes", amount: 5, unit: "cubes", pack: "maggi" },
-      { name: "salt", qty: "pinch", amount: 1, unit: "g", pack: "salt", displayAmount: "pinch", displayUnit: "" }
+      packItem("red onions", "onions", 3, "onions"),
+      item("lima beans or butter beans", "Oils, Sauces & Pantry", 2, "cans", 1.5),
+      item("bell peppers", "Vegetables", 6, "peppers", 4),
+      item("chorizo sausage", "Meat & Seafood", 1, "kg", 6),
+      item("green beans", "Vegetables", 1, "packet", 1.5),
+      item("sweet corn kernels", "Vegetables", 4, "cups", 1.5),
+      item("courgettes", "Vegetables", 3, "courgettes", 2),
+      item("fresh parsley", "Fresh Herbs", 1, "packet", 0.52),
+      packItem("olive oil", "oliveOil", 118, "ml"),
+      pepper(2, "tsp"),
+      packItem("Maggi seasoning cubes", "maggi", 5, "cubes"),
+      salt(0.25, "tsp")
     ]
   }
 };
+
+function item(name, category, amount, unit, cost) {
+  return { name, category, amount, unit, directCost: cost || 0 };
+}
+
+function packItem(name, pack, amount, unit) {
+  return { name, category: packs[pack].category, amount, unit, pack };
+}
+
+function spice(name, pack, amount, unit) {
+  const grams = unit === "tbsp" ? tbspToG(amount) : tspToG(amount);
+  return { name, category: "Seasonings, Herbs & Spices", amount: grams, unit: "g", pack, displayAmount: amount, displayUnit: unit };
+}
+
+function salt(amount, unit) {
+  return { name: "salt", category: "Seasonings, Herbs & Spices", amount: tspToG(amount), unit: "g", pack: "salt", displayAmount: amount, displayUnit: unit };
+}
+
+function pepper(amount, unit) {
+  return { name: "ground black pepper", category: "Seasonings, Herbs & Spices", amount: tspToG(amount), unit: "g", pack: "blackPepper", displayAmount: amount, displayUnit: unit };
+}
 
 const container = document.getElementById("recipes");
 
@@ -323,15 +338,15 @@ Object.keys(recipes).forEach(key => {
   if (r.options && r.options.meat) {
     html += `<div class="optionBox"><div class="small">Choose meat:</div><select id="meat_${key}">`;
     r.options.meat.forEach((m, i) => {
-      html += `<option value="${i}">${m.name}: ${m.qty}</option>`;
+      html += `<option value="${i}">${m.name}: ${formatAmount(m.amount, m.unit)}</option>`;
     });
     html += `</select></div>`;
   }
 
   if (r.optional && r.optional.length) {
     html += `<div class="optionBox"><div class="small">Optional ingredients:</div>`;
-    r.optional.forEach((item, i) => {
-      html += `<label class="small"><input type="checkbox" id="optional_${key}_${i}"> ${item.name}: ${item.qty}</label><br>`;
+    r.optional.forEach((opt, i) => {
+      html += `<label class="small"><input type="checkbox" id="optional_${key}_${i}"> ${opt.name}: ${formatAmount(opt.amount, opt.unit)}</label><br>`;
     });
     html += `</div>`;
   }
@@ -340,44 +355,43 @@ Object.keys(recipes).forEach(key => {
   container.innerHTML += html;
 });
 
-function addAmount(map, key, item) {
+function addToMap(map, ingredient) {
+  const key = ingredient.pack ? `pack:${ingredient.pack}` : `direct:${ingredient.name.toLowerCase()}:${ingredient.unit}`;
+
   if (!map[key]) {
     map[key] = {
-      name: item.name,
+      name: ingredient.pack ? packs[ingredient.pack].label : ingredient.name,
+      category: ingredient.category,
       amount: 0,
-      unit: item.unit,
-      displayAmount: 0,
-      displayUnit: item.displayUnit || item.unit,
-      qtyParts: [],
+      unit: ingredient.pack ? packs[ingredient.pack].unit : ingredient.unit,
       directCost: 0,
-      pack: item.pack || null
+      pack: ingredient.pack || null
     };
   }
 
-  map[key].amount += Number(item.amount || 0);
-
-  if (typeof item.displayAmount === "number") {
-    map[key].displayAmount += item.displayAmount;
-  } else if (item.displayAmount) {
-    map[key].qtyParts.push(item.qty);
-  } else if (!item.pack) {
-    map[key].displayAmount += Number(item.amount || 0);
-  }
-
-  if (item.directCost) map[key].directCost += item.directCost;
+  map[key].amount += numericAmount(ingredient.amount);
+  if (!ingredient.pack) map[key].directCost += ingredient.directCost || 0;
 }
 
-function ingredientKey(item) {
-  if (item.pack) return `pack:${item.pack}`;
-  return `direct:${item.name.toLowerCase()}:${item.unit}`;
+function numericAmount(x) {
+  if (typeof x === "number") return x;
+  return 1;
 }
 
-function formatNeeded(entry) {
-  if (entry.qtyParts.length) return entry.qtyParts.join(" + ");
+function formatAmount(amount, unit) {
+  if (typeof amount === "string") return amount;
+  const rounded = Math.round(amount * 100) / 100;
 
-  const value = Math.round(entry.displayAmount * 100) / 100;
-  if (entry.displayUnit === "") return `${value}`;
-  return `${value} ${entry.displayUnit}`;
+  if (!unit) return `${rounded}`;
+
+  if (unit === "ml") return `${Math.round(rounded)} ml`;
+  if (unit === "g") return `${Math.round(rounded)} g`;
+  if (unit === "kg") return `${rounded} kg`;
+  if (unit === "tsp") return `${rounded} tsp`;
+  if (unit === "tbsp") return `${rounded} tbsp`;
+  if (unit === "cup") return `${rounded} cup${rounded === 1 ? "" : "s"}`;
+
+  return `${rounded} ${unit}`;
 }
 
 function generateList() {
@@ -388,7 +402,7 @@ function generateList() {
     return;
   }
 
-  const items = {};
+  const shopping = {};
   let totalServings = 0;
 
   checked.forEach(recipeKey => {
@@ -396,48 +410,63 @@ function generateList() {
     totalServings += recipe.servings;
 
     if (recipe.options && recipe.options.meat) {
-      const selectedIndex = document.getElementById(`meat_${recipeKey}`).value;
-      const meat = recipe.options.meat[selectedIndex];
-      addAmount(items, ingredientKey(meat), meat);
+      const selected = document.getElementById(`meat_${recipeKey}`).value;
+      addToMap(shopping, recipe.options.meat[selected]);
     }
 
-    recipe.ingredients.forEach(item => addAmount(items, ingredientKey(item), item));
+    recipe.ingredients.forEach(addToMap);
 
     if (recipe.optional) {
-      recipe.optional.forEach((item, i) => {
+      recipe.optional.forEach((opt, i) => {
         const box = document.getElementById(`optional_${recipeKey}_${i}`);
-        if (box && box.checked) addAmount(items, ingredientKey(item), item);
+        if (box && box.checked) addToMap(shopping, opt);
       });
     }
   });
 
+  const grouped = {};
   let totalCost = 0;
-  let out = "SHOPPING LIST\n\n";
 
-  const keys = Object.keys(items).sort((a, b) => items[a].name.localeCompare(items[b].name));
+  Object.values(shopping).forEach(entry => {
+    let cost = entry.directCost || 0;
 
-  keys.forEach(key => {
-    const item = items[key];
-    const needed = formatNeeded(item);
+    if (entry.pack) {
+      const p = packs[entry.pack];
+      cost = Math.ceil(entry.amount / p.size) * p.price;
+    }
 
-    if (item.pack) {
-      const pack = allPacks[item.pack];
-      const packsNeeded = Math.ceil(item.amount / pack.packQty);
-      const cost = packsNeeded * pack.price;
-      totalCost += cost;
-      out += `- ${pack.label}: ${needed} — buy ${packsNeeded} x ${pack.packLabel} (£${cost.toFixed(2)})\n`;
-    } else {
-      totalCost += item.directCost;
-      out += `- ${item.name}: ${needed} (£${item.directCost.toFixed(2)})\n`;
+    totalCost += cost;
+
+    if (!grouped[entry.category]) grouped[entry.category] = [];
+    grouped[entry.category].push(`- ${entry.name}: ${formatAmount(entry.amount, entry.unit)}`);
+  });
+
+  const order = [
+    "Meat & Seafood",
+    "Vegetables",
+    "Fruit",
+    "Fresh Herbs",
+    "Dairy",
+    "Oils, Sauces & Pantry",
+    "Seasonings, Herbs & Spices",
+    "Other"
+  ];
+
+  let output = "SHOPPING LIST\n\n";
+
+  order.forEach(category => {
+    if (grouped[category]) {
+      output += `${category.toUpperCase()}\n`;
+      grouped[category].sort().forEach(line => output += `${line}\n`);
+      output += "\n";
     }
   });
 
-  out += `\nTOTAL SERVINGS: ${totalServings}`;
-  out += `\nESTIMATED GROCERY BILL: £${totalCost.toFixed(2)}`;
-  out += `\nESTIMATED COST PER SERVING: £${(totalCost / totalServings).toFixed(2)}`;
-  out += `\n\nNote: Cost is estimated from supermarket pack sizes, so shared ingredients such as oil, spices, salt, flour, onions, tomatoes, carrots, garlic and seasoning cubes are only costed by the number of packs/bottles/jars needed.`;
+  output += `TOTAL SERVINGS: ${totalServings}`;
+  output += `\nESTIMATED TOTAL COST: £${totalCost.toFixed(2)}`;
+  output += `\nESTIMATED COST PER SERVING: £${(totalCost / totalServings).toFixed(2)}`;
 
-  document.getElementById("output").innerText = out;
+  document.getElementById("output").innerText = output;
 }
 </script>
 
