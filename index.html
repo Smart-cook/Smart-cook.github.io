@@ -40,7 +40,7 @@ button {
 <body>
 
 <h1>Batch Cooking Shopping List Generator</h1>
-<p class="small">Select any combination of recipes + choose options where available</p>
+<p class="small">All ingredient units preserved exactly as in recipes</p>
 
 <div id="recipes"></div>
 
@@ -52,103 +52,91 @@ button {
 <script>
 
 // =======================
-// INGREDIENT NORMALISATION
+// NO NORMALISATION (IMPORTANT FIX)
 // =======================
-
-// Ginger conversion: 1 inch ≈ 37.5g
-function gingerToInches(g) {
-  return Math.round((g / 37.5) * 10) / 10;
-}
-
-// =======================
-// RECIPE DATABASE
-// =======================
+// We NO LONGER convert units in output.
+// Every ingredient keeps its original unit label.
 
 const recipes = {
 
-// -----------------------
 "nigerian_pepper_stew": {
 name: "Nigerian Pepper Stew",
 servings: 12,
 ingredients: {
-"beef (kg)": {qty: 1.1, cost: 12},
-"red onion": {qty: 4, cost: 1},
-"tomatoes": {qty: 9, cost: 2.1},
-"red pepper": {qty: 6, cost: 4},
-"scotch bonnet": {qty: 2, cost: 0.25},
-"Maggi cubes": {qty: 4, cost: 2.5},
-"rosemary": {qty: 2, cost: 0.6},
-"thyme": {qty: 3, cost: 0.85},
-"curry powder": {qty: 2, cost: 1},
-"salt": {qty: 2, cost: 0.5},
-"palm oil (ml)": {qty: 118, cost: 2.5},
-"fresh basil": {qty: 1, cost: 0.52}
+"beef": {qty: "1.1 kg", cost: 12},
+"red onion": {qty: "4", cost: 1},
+"tomatoes": {qty: "9", cost: 2.1},
+"red pepper": {qty: "6", cost: 4},
+"scotch bonnet": {qty: "2", cost: 0.25},
+"Maggi cubes": {qty: "4", cost: 2.5},
+"dried rosemary": {qty: "2 tsp", cost: 0.6},
+"dried thyme": {qty: "3 tsp", cost: 0.85},
+"curry powder": {qty: "2 tsp", cost: 1},
+"salt": {qty: "2 tsp", cost: 0.5},
+"palm oil": {qty: "118 ml", cost: 2.5},
+"fresh basil": {qty: "1 packet", cost: 0.52}
 }
 },
 
-// -----------------------
 "butter_chicken": {
 name: "Indian Butter Chicken",
 servings: 15,
 ingredients: {
-"chicken breast (kg)": {qty: 2, cost: 12.5},
-"red onion": {qty: 4, cost: 1},
-"garlic": {qty: 1, cost: 0.5},
-"ginger": {qty: gingerToInches(150), cost: 0.75}, // normalized
-"red chilli": {qty: 4, cost: 0.6},
-"lemon": {qty: 1, cost: 0.4},
-"butter (g)": {qty: 100, cost: 2},
-"tomato sauce (ml)": {qty: 1000, cost: 1.5},
-"olive oil (ml)": {qty: 59, cost: 6},
-"yoghurt (ml)": {qty: 237, cost: 0.6},
-"double cream (ml)": {qty: 600, cost: 2.8},
-"garam masala": {qty: 8, cost: 1},
-"ground coriander": {qty: 4, cost: 0.7},
-"ground cumin": {qty: 8, cost: 0.6},
-"ground turmeric": {qty: 8, cost: 0.6},
-"cayenne pepper": {qty: 4, cost: 0.6},
-"ground black pepper": {qty: 2, cost: 1.7},
-"salt": {qty: 8, cost: 0.5}
+"chicken breast": {qty: "2 kg", cost: 12.5},
+"red onion": {qty: "4", cost: 1},
+"garlic": {qty: "1 whole", cost: 0.5},
+"ginger": {qty: "4 inches", cost: 0.75},
+"red chilli": {qty: "4", cost: 0.6},
+"lemon": {qty: "1", cost: 0.4},
+"butter": {qty: "100 g", cost: 2},
+"tomato sauce": {qty: "1000 ml", cost: 1.5},
+"olive oil": {qty: "59 ml", cost: 6},
+"yoghurt": {qty: "237 ml", cost: 0.6},
+"double cream": {qty: "600 ml", cost: 2.8},
+"garam masala": {qty: "8 tsp", cost: 1},
+"ground coriander": {qty: "4 tsp", cost: 0.7},
+"ground cumin": {qty: "8 tsp", cost: 0.6},
+"ground turmeric": {qty: "8 tsp", cost: 0.6},
+"cayenne pepper": {qty: "4 tsp", cost: 0.6},
+"ground black pepper": {qty: "2 tsp", cost: 1.7},
+"salt": {qty: "8 tsp", cost: 0.5}
 }
 },
 
-// -----------------------
 "japanese_curry_easy_method": {
 name: "Japanese Curry (Easy Method)",
 servings: 12,
 ingredients: {
-"beef (kg)": {qty: 1.1, cost: 12},
-"potatoes": {qty: 4, cost: 2},
-"carrots": {qty: 6, cost: 1.05},
-"brown onion": {qty: 2, cost: 0.7},
-"Golden curry roux blocks": {qty: 1, cost: 3.05},
-"salt": {qty: 1, cost: 0.5},
-"rosemary": {qty: 1, cost: 0.6}
+"beef": {qty: "1.1 kg", cost: 12},
+"potatoes": {qty: "4", cost: 2},
+"carrots": {qty: "6", cost: 1.05},
+"brown onion": {qty: "2", cost: 0.7},
+"Golden curry roux blocks": {qty: "1 pack", cost: 3.05},
+"salt": {qty: "1 tsp", cost: 0.5},
+"dried rosemary": {qty: "1 tsp", cost: 0.6}
 }
 },
 
-// -----------------------
 "japanese_curry_from_scratch": {
 name: "Japanese Curry (From Scratch)",
 servings: 12,
 ingredients: {
-"chicken breast fillets (kg)": {qty: 1.8, cost: 12},
-"brown onion": {qty: 6, cost: 1},
-"carrots": {qty: 6, cost: 0.7},
-"garlic cloves": {qty: 9, cost: 0.5},
-"ginger": {qty: gingerToInches(75), cost: 0.5},
-"Maggi cube": {qty: 5, cost: 2.5},
-"Japanese/Katsu curry powder": {qty: 6, cost: 3},
-"Chinese 5 spice": {qty: 6, cost: 1},
-"red chilli powder": {qty: 2, cost: 0.6},
-"flour": {qty: 0.5, cost: 0.7},
-"soy sauce": {qty: 3, cost: 0.6},
-"honey": {qty: 3, cost: 1},
-"distilled malt or rice vinegar": {qty: 3, cost: 0.4}
+"chicken breast fillets": {qty: "1.8 kg", cost: 12},
+"brown onion": {qty: "6", cost: 1},
+"carrots": {qty: "6", cost: 0.7},
+"garlic cloves": {qty: "9", cost: 0.5},
+"ginger": {qty: "75 g (≈2 inches)", cost: 0.5},
+"Maggi cube": {qty: "5", cost: 2.5},
+"Japanese/Katsu curry powder": {qty: "6 tbsp", cost: 3},
+"Chinese 5 spice": {qty: "6 tsp", cost: 1},
+"red chilli powder": {qty: "2 tbsp", cost: 0.6},
+"flour": {qty: "1/2 cup", cost: 0.7},
+"soy sauce": {qty: "3 tbsp", cost: 0.6},
+"honey": {qty: "3 tbsp", cost: 1},
+"distilled malt or rice vinegar": {qty: "3 tsp", cost: 0.40}
 }
 },
 
-// -----------------------
 "peanut_stew": {
 name: "Peanut Stew",
 servings: 11,
@@ -161,96 +149,92 @@ meat: [
 },
 
 ingredients: {
-"peanut butter (g)": {qty: 340, cost: 2},
-"tomatoes": {qty: 9, cost: 2.1},
-"garlic cloves": {qty: 9, cost: 0.4},
-"scotch bonnet": {qty: 2, cost: 0.25},
-"red onion": {qty: 4, cost: 1},
-"ginger": {qty: gingerToInches(150), cost: 0.7},
-"ground cumin": {qty: 3, cost: 0.6},
-"ground nutmeg": {qty: 3, cost: 0.7},
-"Maggi cubes": {qty: 4, cost: 2.5},
-"tomato paste": {qty: 0.75, cost: 0.7},
-"fresh spinach": {qty: 1, cost: 1},
-"peanuts": {qty: 1, cost: 1}
+"peanut butter": {qty: "340 g", cost: 2},
+"tomatoes": {qty: "9", cost: 2.1},
+"garlic cloves": {qty: "9", cost: 0.4},
+"scotch bonnet": {qty: "2", cost: 0.25},
+"red onion": {qty: "4", cost: 1},
+"ginger": {qty: "6 inches", cost: 0.7},
+"ground cumin": {qty: "3 tsp", cost: 0.6},
+"ground nutmeg": {qty: "3 tsp", cost: 0.7},
+"Maggi cubes": {qty: "4", cost: 2.5},
+"tomato paste": {qty: "3/4 cup", cost: 0.7},
+"fresh spinach": {qty: "1 bag", cost: 1},
+"peanuts": {qty: "1 pack", cost: 1}
 }
 },
 
-// -----------------------
 "moqueca": {
 name: "Moqueca de Camarão",
 servings: 8,
 ingredients: {
-"shrimp (kg)": {qty: 1, cost: 15},
-"palm oil (ml)": {qty: 118, cost: 2.5},
-"bell peppers": {qty: 6, cost: 4},
-"garlic cloves": {qty: 8, cost: 0.4},
-"tomatoes": {qty: 6, cost: 2.1},
-"coconut milk (ml)": {qty: 800, cost: 1.6},
-"lime": {qty: 1, cost: 0.25},
-"fresh parsley": {qty: 1, cost: 0.6},
-"onions": {qty: 2, cost: 1},
-"red chilli": {qty: 3, cost: 0.6},
-"Maggi cubes": {qty: 2, cost: 2.5}
+"shrimp": {qty: "1 kg", cost: 15},
+"palm oil": {qty: "118 ml", cost: 2.5},
+"bell peppers": {qty: "6", cost: 4},
+"garlic cloves": {qty: "8", cost: 0.4},
+"tomatoes": {qty: "6", cost: 2.1},
+"coconut milk": {qty: "800 ml", cost: 1.6},
+"lime": {qty: "1", cost: 0.25},
+"fresh parsley": {qty: "1 packet", cost: 0.6},
+"onions": {qty: "2", cost: 1},
+"red chilli": {qty: "3", cost: 0.6},
+"Maggi cubes": {qty: "2", cost: 2.5}
 }
 },
 
-// -----------------------
 "fricassee": {
 name: "French Fricassee",
 servings: 17,
 ingredients: {
-"chicken drumsticks (kg)": {qty: 2, cost: 4.5},
-"carrots": {qty: 6, cost: 0.7},
-"butter (g)": {qty: 113, cost: 2},
-"brown onion": {qty: 4, cost: 1},
-"mushrooms (g)": {qty: 650, cost: 1.7},
-"garlic cloves": {qty: 6, cost: 0.4},
-"double cream (ml)": {qty: 600, cost: 2.8},
-"flour": {qty: 2, cost: 0.7},
-"dried thyme": {qty: 4, cost: 0.85},
-"chicken stock cubes": {qty: 4, cost: 0.7},
-"Maggi cubes": {qty: 5, cost: 2.5}
+"chicken drumsticks": {qty: "2 kg", cost: 4.5},
+"carrots": {qty: "6", cost: 0.7},
+"butter": {qty: "113 g", cost: 2},
+"brown onion": {qty: "4", cost: 1},
+"mushrooms": {qty: "650 g", cost: 1.7},
+"garlic cloves": {qty: "6", cost: 0.4},
+"double cream": {qty: "600 ml", cost: 2.8},
+"flour": {qty: "2 cups", cost: 0.7},
+"dried thyme": {qty: "4 tsp", cost: 0.85},
+"chicken stock cubes": {qty: "4", cost: 0.7},
+"Maggi cubes": {qty: "5", cost: 2.5}
 }
 },
 
-// -----------------------
 "fesenjan": {
 name: "Persian Fesenjan",
 servings: 13,
 ingredients: {
-"walnuts (g)": {qty: 800, cost: 7},
-"chicken drumsticks (kg)": {qty: 2, cost: 4.3},
-"red onion": {qty: 4, cost: 1},
-"olive oil (tbsp)": {qty: 4, cost: 6},
-"pomegranate molasses": {qty: 237, cost: 4},
-"chicken stock cubes": {qty: 3, cost: 0.7},
-"Maggi cubes": {qty: 3, cost: 2.5},
-"ground black pepper": {qty: 4, cost: 1.7},
-"ground turmeric": {qty: 2, cost: 0.6},
-"saffron": {qty: 1, cost: 3},
-"salt": {qty: 3, cost: 0.5},
-"lime": {qty: 1, cost: 0.25}
+"walnuts": {qty: "800 g", cost: 7},
+"chicken drumsticks": {qty: "2 kg", cost: 4.3},
+"red onion": {qty: "4", cost: 1},
+"olive oil": {qty: "4 tbsp", cost: 6},
+"pomegranate molasses": {qty: "237 ml", cost: 4},
+"chicken stock cubes": {qty: "3", cost: 0.7},
+"Maggi cubes": {qty: "3", cost: 2.5},
+"ground black pepper": {qty: "4 tsp", cost: 1.7},
+"ground turmeric": {qty: "2 tsp", cost: 0.6},
+"saffron": {qty: "1 tsp", cost: 3},
+"salt": {qty: "3 tsp", cost: 0.5},
+"lime": {qty: "1", cost: 0.25}
 }
 },
 
-// -----------------------
 "succotash": {
 name: "American Succotash",
 servings: 9,
 ingredients: {
-"red onion": {qty: 3, cost: 1},
-"lima beans cans": {qty: 2, cost: 1.5},
-"bell peppers": {qty: 6, cost: 4},
-"chorizo (kg)": {qty: 1, cost: 6},
-"green beans pack": {qty: 1, cost: 1.5},
-"corn cups": {qty: 4, cost: 1.5},
-"courgettes": {qty: 3, cost: 2},
-"fresh parsley": {qty: 1, cost: 0.52},
-"olive oil (ml)": {qty: 118, cost: 6},
-"ground black pepper": {qty: 2, cost: 1.7},
-"Maggi cubes": {qty: 5, cost: 2.5},
-"salt": {qty: 1, cost: 0.5}
+"red onion": {qty: "3", cost: 1},
+"lima beans cans": {qty: "2", cost: 1.5},
+"bell peppers": {qty: "6", cost: 4},
+"chorizo": {qty: "1 kg", cost: 6},
+"green beans": {qty: "1 pack", cost: 1.5},
+"corn kernels": {qty: "4 cups", cost: 1.5},
+"courgettes": {qty: "3", cost: 2},
+"fresh parsley": {qty: "1 packet", cost: 0.52},
+"olive oil": {qty: "118 ml", cost: 6},
+"ground black pepper": {qty: "2 tsp", cost: 1.7},
+"Maggi cubes": {qty: "5", cost: 2.5},
+"salt": {qty: "1 tsp", cost: 0.5}
 }
 }
 
