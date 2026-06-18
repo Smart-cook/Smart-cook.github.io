@@ -40,7 +40,7 @@ button {
 <body>
 
 <h1>Batch Cooking Shopping List Generator</h1>
-<p class="small">All ingredient units preserved exactly as in recipes</p>
+<p class="small">Exact recipe-faithful version (no unit rewriting)</p>
 
 <div id="recipes"></div>
 
@@ -52,115 +52,117 @@ button {
 <script>
 
 // =======================
-// NO NORMALISATION (IMPORTANT FIX)
+// STRICT DATA MODEL (NO NORMALISATION)
 // =======================
-// We NO LONGER convert units in output.
-// Every ingredient keeps its original unit label.
 
 const recipes = {
 
 "nigerian_pepper_stew": {
-name: "Nigerian Pepper Stew",
+name: "Nigerian pepper stew",
 servings: 12,
 ingredients: {
-"beef": {qty: "1.1 kg", cost: 12},
-"red onion": {qty: "4", cost: 1},
+"lean diced beef": {qty: "1.1 kg", cost: 12},
+"red onions": {qty: "4", cost: 1},
 "tomatoes": {qty: "9", cost: 2.1},
-"red pepper": {qty: "6", cost: 4},
-"scotch bonnet": {qty: "2", cost: 0.25},
+"red peppers": {qty: "6", cost: 4},
+"scotch bonnet peppers": {qty: "1–2", cost: 0.25},
 "Maggi cubes": {qty: "4", cost: 2.5},
-"dried rosemary": {qty: "2 tsp", cost: 0.6},
-"dried thyme": {qty: "3 tsp", cost: 0.85},
+"rosemary": {qty: "2 tsp", cost: 0.6},
+"thyme": {qty: "3 tsp", cost: 0.85},
 "curry powder": {qty: "2 tsp", cost: 1},
 "salt": {qty: "2 tsp", cost: 0.5},
-"palm oil": {qty: "118 ml", cost: 2.5},
+"palm oil": {qty: "1/2 cup (118 ml)", cost: 2.5},
 "fresh basil": {qty: "1 packet", cost: 0.52}
 }
 },
 
-"butter_chicken": {
-name: "Indian Butter Chicken",
+"indian_butter_chicken": {
+name: "Indian butter chicken",
 servings: 15,
 ingredients: {
 "chicken breast": {qty: "2 kg", cost: 12.5},
-"red onion": {qty: "4", cost: 1},
+"red onions": {qty: "4 medium", cost: 1},
 "garlic": {qty: "1 whole", cost: 0.5},
 "ginger": {qty: "4 inches", cost: 0.75},
-"red chilli": {qty: "4", cost: 0.6},
+"red chilli peppers": {qty: "3–4", cost: 0.6},
 "lemon": {qty: "1", cost: 0.4},
-"butter": {qty: "100 g", cost: 2},
-"tomato sauce": {qty: "1000 ml", cost: 1.5},
-"olive oil": {qty: "59 ml", cost: 6},
-"yoghurt": {qty: "237 ml", cost: 0.6},
-"double cream": {qty: "600 ml", cost: 2.8},
+"fresh parsley": {qty: "1 packet", cost: 0.52},
+"salt": {qty: "8 tsp", cost: 0.5},
 "garam masala": {qty: "8 tsp", cost: 1},
 "ground coriander": {qty: "4 tsp", cost: 0.7},
 "ground cumin": {qty: "8 tsp", cost: 0.6},
 "ground turmeric": {qty: "8 tsp", cost: 0.6},
 "cayenne pepper": {qty: "4 tsp", cost: 0.6},
 "ground black pepper": {qty: "2 tsp", cost: 1.7},
-"salt": {qty: "8 tsp", cost: 0.5}
+"salt (additional)": {qty: "8 tsp", cost: 0.5},
+"salted butter": {qty: "100 g", cost: 2},
+"tomato sauce": {qty: "1000 ml", cost: 1.5},
+"olive oil": {qty: "59 ml + 1 tbsp", cost: 6},
+"creamy natural yoghurt": {qty: "237 ml", cost: 0.6},
+"double cream": {qty: "600 ml", cost: 2.8}
 }
 },
 
-"japanese_curry_easy_method": {
-name: "Japanese Curry (Easy Method)",
+"japanese_curry_easy": {
+name: "Japanese curry (easy method)",
 servings: 12,
 ingredients: {
 "beef": {qty: "1.1 kg", cost: 12},
 "potatoes": {qty: "4", cost: 2},
 "carrots": {qty: "6", cost: 1.05},
-"brown onion": {qty: "2", cost: 0.7},
+"brown onions": {qty: "2", cost: 0.7},
 "Golden curry roux blocks": {qty: "1 pack", cost: 3.05},
-"salt": {qty: "1 tsp", cost: 0.5},
-"dried rosemary": {qty: "1 tsp", cost: 0.6}
+"salt": {qty: "pinch", cost: 0.5},
+"rosemary": {qty: "1 tsp", cost: 0.6}
 }
 },
 
-"japanese_curry_from_scratch": {
-name: "Japanese Curry (From Scratch)",
+"japanese_curry_scratch": {
+name: "Japanese curry (from scratch)",
 servings: 12,
 ingredients: {
 "chicken breast fillets": {qty: "1.8 kg", cost: 12},
-"brown onion": {qty: "6", cost: 1},
+"brown onions": {qty: "6", cost: 1},
 "carrots": {qty: "6", cost: 0.7},
 "garlic cloves": {qty: "9", cost: 0.5},
-"ginger": {qty: "75 g (≈2 inches)", cost: 0.5},
+"ginger": {qty: "75 g", cost: 0.5},
 "Maggi cube": {qty: "5", cost: 2.5},
 "Japanese/Katsu curry powder": {qty: "6 tbsp", cost: 3},
 "Chinese 5 spice": {qty: "6 tsp", cost: 1},
 "red chilli powder": {qty: "2 tbsp", cost: 0.6},
+"salt": {qty: "1 tsp", cost: 0.5},
 "flour": {qty: "1/2 cup", cost: 0.7},
 "soy sauce": {qty: "3 tbsp", cost: 0.6},
 "honey": {qty: "3 tbsp", cost: 1},
-"distilled malt or rice vinegar": {qty: "3 tsp", cost: 0.40}
+"distilled vinegar": {qty: "3 tsp", cost: 0.4}
 }
 },
 
 "peanut_stew": {
-name: "Peanut Stew",
+name: "Peanut stew",
 servings: 11,
 
 options: {
 meat: [
-{ name: "Chicken drumsticks (kg)", cost: 4.5 },
-{ name: "Beef/goat meat (kg)", cost: 12 }
+{ name: "Chicken drumsticks", cost: 4.5 },
+{ name: "Beef/goat meat", cost: 12 }
 ]
 },
 
 ingredients: {
-"peanut butter": {qty: "340 g", cost: 2},
+"chicken drumsticks OR beef/goat": {qty: "2 kg OR 1.1 kg", cost: 0},
+"smooth peanut butter": {qty: "340 g", cost: 2},
 "tomatoes": {qty: "9", cost: 2.1},
 "garlic cloves": {qty: "9", cost: 0.4},
-"scotch bonnet": {qty: "2", cost: 0.25},
-"red onion": {qty: "4", cost: 1},
+"scotch bonnet peppers": {qty: "1–2", cost: 0.25},
+"red onions": {qty: "4", cost: 1},
 "ginger": {qty: "6 inches", cost: 0.7},
 "ground cumin": {qty: "3 tsp", cost: 0.6},
 "ground nutmeg": {qty: "3 tsp", cost: 0.7},
 "Maggi cubes": {qty: "4", cost: 2.5},
 "tomato paste": {qty: "3/4 cup", cost: 0.7},
-"fresh spinach": {qty: "1 bag", cost: 1},
-"peanuts": {qty: "1 pack", cost: 1}
+"fresh baby spinach": {qty: "1 bag", cost: 1},
+"peanuts": {qty: "1 packet", cost: 1}
 }
 },
 
@@ -169,50 +171,58 @@ name: "Moqueca de Camarão",
 servings: 8,
 ingredients: {
 "shrimp": {qty: "1 kg", cost: 15},
-"palm oil": {qty: "118 ml", cost: 2.5},
-"bell peppers": {qty: "6", cost: 4},
+"palm oil": {qty: "1/2 cup (118 ml)", cost: 2.5},
+"red bell peppers": {qty: "2", cost: 0},
+"yellow bell peppers": {qty: "2", cost: 0},
+"green bell peppers": {qty: "2", cost: 0},
 "garlic cloves": {qty: "8", cost: 0.4},
-"tomatoes": {qty: "6", cost: 2.1},
-"coconut milk": {qty: "800 ml", cost: 1.6},
+"tomatoes": {qty: "5–6", cost: 2.1},
+"full fat coconut milk": {qty: "2 x 400 ml", cost: 1.6},
 "lime": {qty: "1", cost: 0.25},
 "fresh parsley": {qty: "1 packet", cost: 0.6},
 "onions": {qty: "2", cost: 1},
-"red chilli": {qty: "3", cost: 0.6},
-"Maggi cubes": {qty: "2", cost: 2.5}
+"red chillies": {qty: "3", cost: 0.6},
+"Maggi/shrimp cubes": {qty: "2", cost: 2.5}
 }
 },
 
 "fricassee": {
-name: "French Fricassee",
+name: "French fricassee",
 servings: 17,
 ingredients: {
 "chicken drumsticks": {qty: "2 kg", cost: 4.5},
 "carrots": {qty: "6", cost: 0.7},
-"butter": {qty: "113 g", cost: 2},
-"brown onion": {qty: "4", cost: 1},
+"salt": {qty: "1 tsp", cost: 0.5},
+"ground black pepper": {qty: "7 tsp", cost: 1.7},
+"mustard powder": {qty: "4 tsp", cost: 1.5},
+"butter": {qty: "1/2 cup", cost: 2},
+"brown onions": {qty: "4", cost: 1},
 "mushrooms": {qty: "650 g", cost: 1.7},
-"garlic cloves": {qty: "6", cost: 0.4},
-"double cream": {qty: "600 ml", cost: 2.8},
-"flour": {qty: "2 cups", cost: 0.7},
 "dried thyme": {qty: "4 tsp", cost: 0.85},
+"garlic cloves": {qty: "6", cost: 0.4},
+"flour": {qty: "2 cups", cost: 0.7},
 "chicken stock cubes": {qty: "4", cost: 0.7},
-"Maggi cubes": {qty: "5", cost: 2.5}
+"Maggi cubes": {qty: "5", cost: 2.5},
+"double cream": {qty: "600 ml", cost: 2.8}
 }
 },
 
 "fesenjan": {
-name: "Persian Fesenjan",
+name: "Persian fesenjan",
 servings: 13,
 ingredients: {
 "walnuts": {qty: "800 g", cost: 7},
 "chicken drumsticks": {qty: "2 kg", cost: 4.3},
-"red onion": {qty: "4", cost: 1},
+"red onions": {qty: "4", cost: 1},
 "olive oil": {qty: "4 tbsp", cost: 6},
-"pomegranate molasses": {qty: "237 ml", cost: 4},
+"pomegranate molasses": {qty: "1 cup (237 ml)", cost: 4},
 "chicken stock cubes": {qty: "3", cost: 0.7},
 "Maggi cubes": {qty: "3", cost: 2.5},
 "ground black pepper": {qty: "4 tsp", cost: 1.7},
 "ground turmeric": {qty: "2 tsp", cost: 0.6},
+"cinnamon (optional)": {qty: "2 tsp", cost: 0.7},
+"cardamom (optional)": {qty: "2 tsp", cost: 3},
+"cayenne pepper (optional)": {qty: "1 tsp", cost: 0.6},
 "saffron": {qty: "1 tsp", cost: 3},
 "salt": {qty: "3 tsp", cost: 0.5},
 "lime": {qty: "1", cost: 0.25}
@@ -220,28 +230,28 @@ ingredients: {
 },
 
 "succotash": {
-name: "American Succotash",
+name: "American succotash",
 servings: 9,
 ingredients: {
-"red onion": {qty: "3", cost: 1},
-"lima beans cans": {qty: "2", cost: 1.5},
+"red onions": {qty: "3", cost: 1},
+"lima beans or butter beans": {qty: "2 cans", cost: 1.5},
 "bell peppers": {qty: "6", cost: 4},
-"chorizo": {qty: "1 kg", cost: 6},
-"green beans": {qty: "1 pack", cost: 1.5},
-"corn kernels": {qty: "4 cups", cost: 1.5},
+"chorizo sausage": {qty: "1 kg", cost: 6},
+"green beans": {qty: "1 packet", cost: 1.5},
+"sweet corn kernels": {qty: "4 cups", cost: 1.5},
 "courgettes": {qty: "3", cost: 2},
 "fresh parsley": {qty: "1 packet", cost: 0.52},
-"olive oil": {qty: "118 ml", cost: 6},
+"olive oil": {qty: "1/2 cup (118 ml)", cost: 6},
 "ground black pepper": {qty: "2 tsp", cost: 1.7},
 "Maggi cubes": {qty: "5", cost: 2.5},
-"salt": {qty: "1 tsp", cost: 0.5}
+"salt": {qty: "pinch", cost: 0.5}
 }
 }
 
 };
 
 // =======================
-// UI
+// RENDER UI
 // =======================
 
 const container = document.getElementById("recipes");
@@ -260,11 +270,9 @@ let html = `
 if (r.options?.meat) {
 html += `<div class="small">Choose meat:</div>`;
 html += `<select id="opt_${key}">`;
-
-r.options.meat.forEach((m, i) => {
+r.options.meat.forEach((m,i)=>{
 html += `<option value="${i}">${m.name} (+£${m.cost})</option>`;
 });
-
 html += `</select>`;
 }
 
@@ -279,63 +287,53 @@ container.innerHTML += html;
 function generateList() {
 
 const checked = [...document.querySelectorAll("input[type=checkbox]:checked")]
-.map(el => el.value);
+.map(e=>e.value);
 
-if (checked.length === 0) {
-document.getElementById("output").innerText = "Select at least one recipe.";
+if(!checked.length){
+document.getElementById("output").innerText="Select recipes";
 return;
 }
 
-let result = {};
+let items = {};
 let totalCost = 0;
 let totalServings = 0;
 
-checked.forEach(r => {
+checked.forEach(r=>{
 
 const recipe = recipes[r];
 totalServings += recipe.servings;
 
 // meat option
-if (recipe.options?.meat) {
+if(recipe.options?.meat){
 const sel = document.getElementById(`opt_${r}`);
-const chosen = recipe.options.meat[sel.value];
-
-if (!result[chosen.name]) {
-result[chosen.name] = {qty: 1, cost: chosen.cost};
-} else {
-result[chosen.name].qty += 1;
-result[chosen.name].cost += chosen.cost;
-}
-
-totalCost += chosen.cost;
+const choice = recipe.options.meat[sel.value];
+items[choice.name] = items[choice.name] || {qty:1,cost:choice.cost};
+items[choice.name].cost += choice.cost;
+totalCost += choice.cost;
 }
 
 // ingredients
-for (let item in recipe.ingredients) {
+for(let k in recipe.ingredients){
+if(!items[k]) items[k]= {...recipe.ingredients[k]};
+else items[k].cost += recipe.ingredients[k].cost;
 
-if (!result[item]) {
-result[item] = {...recipe.ingredients[item]};
-} else {
-result[item].qty += recipe.ingredients[item].qty;
-result[item].cost += recipe.ingredients[item].cost;
+totalCost += recipe.ingredients[k].cost;
 }
 
-totalCost += recipe.ingredients[item].cost;
-}
 });
 
 // OUTPUT
-let output = "SHOPPING LIST\n\n";
+let out="SHOPPING LIST\n\n";
 
-Object.keys(result).sort().forEach(item => {
-output += `- ${item}: ${result[item].qty}\n`;
+Object.keys(items).sort().forEach(k=>{
+out += `- ${k}: ${items[k].qty}\n`;
 });
 
-output += `\nTOTAL SERVINGS: ${totalServings}`;
-output += `\nESTIMATED COST: £${totalCost.toFixed(2)}`;
-output += `\nCOST PER SERVING: £${(totalCost / totalServings).toFixed(2)}`;
+out += `\nTOTAL SERVINGS: ${totalServings}`;
+out += `\nESTIMATED COST: £${totalCost.toFixed(2)}`;
+out += `\nCOST PER SERVING: £${(totalCost/totalServings).toFixed(2)}`;
 
-document.getElementById("output").innerText = output;
+document.getElementById("output").innerText=out;
 }
 
 </script>
