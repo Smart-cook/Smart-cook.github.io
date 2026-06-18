@@ -1,38 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Batch Cooking Shopping List</title>
 
 <style>
-body { font-family: Arial; margin: 20px; max-width: 900px; }
-h1 { font-size: 22px; }
-
+body { font-family: Arial, sans-serif; margin: 20px; max-width: 980px; line-height: 1.4; }
+h1 { font-size: 24px; margin-bottom: 6px; }
 .recipe {
   margin: 10px 0;
-  padding: 10px;
+  padding: 12px;
   background: #f7f7f7;
-  border-radius: 6px;
+  border-radius: 8px;
 }
-
 .small { color: #666; font-size: 12px; margin-top: 5px; }
-
-select { margin-top: 6px; padding: 5px; }
-
+.option-row { margin-top: 8px; }
+select { margin-top: 6px; padding: 6px; max-width: 100%; }
 button {
-  padding: 10px;
-  margin-top: 10px;
+  padding: 10px 14px;
+  margin-top: 12px;
   cursor: pointer;
   margin-right: 10px;
 }
-
 #output {
   margin-top: 20px;
   white-space: pre-wrap;
   background: #f7f7f7;
-  padding: 15px;
-  border-radius: 6px;
+  padding: 16px;
+  border-radius: 8px;
+}
+.controls {
+  margin: 12px 0;
+  padding: 10px;
+  background: #fff8e8;
+  border-radius: 8px;
+}
+@media print {
+  button, .recipe, .controls, h1 + p { display: none; }
+  body { margin: 0; max-width: none; }
+  #output { background: #fff; padding: 0; }
 }
 </style>
 </head>
@@ -40,7 +47,14 @@ button {
 <body>
 
 <h1>Batch Cooking Shopping List Generator</h1>
-<p class="small">Exact recipe-faithful version (no unit rewriting)</p>
+<p class="small">Select any combination of recipes. Grocery cost is estimated using buyable supermarket pack sizes where known.</p>
+
+<div class="controls">
+  <label>
+    <input type="checkbox" id="includeOptional" checked>
+    Include optional ingredients
+  </label>
+</div>
 
 <div id="recipes"></div>
 
@@ -50,241 +64,415 @@ button {
 <div id="output"></div>
 
 <script>
+// =======================
+// UNIT / COST ASSUMPTIONS
+// =======================
+// Pack-aware costing is used for items where you provided supermarket pack sizes.
+// For herbs/spices, tsp/tbsp quantities are converted to estimated grams so the app can estimate how many 55g jars are needed.
+
+const purchaseRules = {
+  olive_oil: { label: "olive oil", packSize: 750, unit: "ml", price: 6, packLabel: "750 ml bottle" },
+  palm_oil: { label: "palm oil", packSize: 450, unit: "ml", price: 2.5, packLabel: "450 ml bottle" },
+  maggi: { label: "Maggi/shrimp seasoning cubes", packSize: 100, unit: "cubes", price: 2.5, packLabel: "100-cube pack" },
+  chicken_stock: { label: "chicken stock cubes", packSize: 12, unit: "cubes", price: 0.7, packLabel: "12-cube pack" },
+  onions: { label: "onions", packSize: 8, unit: "onions", price: 1, packLabel: "8-onion pack" },
+  tomatoes: { label: "tomatoes", packSize: 9, unit: "tomatoes", price: 2.1, packLabel: "9-tomato net" },
+  carrots: { label: "carrots", packSize: 8, unit: "carrots", price: 1.05, packLabel: "8-carrot pack" },
+  garlic: { label: "garlic", packSize: 11, unit: "cloves", price: 0.5, packLabel: "bulb, about 11 cloves" },
+  butter: { label: "butter/salted butter", packSize: 240, unit: "g", price: 2, packLabel: "240 g pack" },
+  salt: { label: "salt", packSize: 750, unit: "g", price: 0.5, packLabel: "750 g container" },
+  flour: { label: "flour", packSize: 1500, unit: "g", price: 0.7, packLabel: "1.5 kg bag" },
+  ground_black_pepper: { label: "ground black pepper", packSize: 100, unit: "g", price: 1.7, packLabel: "100 g container" },
+  mixed_bell_peppers: { label: "mixed colour bell peppers", packSize: 1, unit: "pack", price: 1.75, packLabel: "1 red + 1 yellow + 1 green pack" },
+
+  // 55g herb/spice jars
+  rosemary: { label: "rosemary", packSize: 55, unit: "g", price: 0.6, packLabel: "55 g jar" },
+  thyme: { label: "thyme / dried thyme", packSize: 55, unit: "g", price: 0.85, packLabel: "55 g jar" },
+  curry_powder: { label: "curry powder", packSize: 55, unit: "g", price: 1, packLabel: "55 g jar" },
+  garam_masala: { label: "garam masala", packSize: 55, unit: "g", price: 1, packLabel: "55 g jar" },
+  ground_coriander: { label: "ground coriander", packSize: 55, unit: "g", price: 0.7, packLabel: "55 g jar" },
+  ground_cumin: { label: "ground cumin", packSize: 55, unit: "g", price: 0.6, packLabel: "55 g jar" },
+  ground_turmeric: { label: "ground turmeric / turmeric powder", packSize: 55, unit: "g", price: 0.6, packLabel: "55 g jar" },
+  cayenne_pepper: { label: "cayenne pepper", packSize: 55, unit: "g", price: 0.6, packLabel: "55 g jar" },
+  japanese_katsu_curry_powder: { label: "Japanese/Katsu curry powder", packSize: 55, unit: "g", price: 3, packLabel: "55 g jar" },
+  chinese_5_spice: { label: "Chinese 5 spice", packSize: 55, unit: "g", price: 1, packLabel: "55 g jar" },
+  red_chilli_powder: { label: "red chilli powder", packSize: 55, unit: "g", price: 0.6, packLabel: "55 g jar" },
+  ground_nutmeg: { label: "ground nutmeg", packSize: 55, unit: "g", price: 0.7, packLabel: "55 g jar" },
+  mustard_powder: { label: "mustard powder", packSize: 55, unit: "g", price: 1.5, packLabel: "55 g jar" },
+  cinnamon: { label: "cinnamon powder", packSize: 55, unit: "g", price: 0.7, packLabel: "55 g jar" },
+  cardamom: { label: "cardamom powder", packSize: 55, unit: "g", price: 3, packLabel: "55 g jar" }
+};
+
+// Approximate grams per teaspoon used for 55g jar costing.
+const gramsPerTsp = {
+  rosemary: 0.67,
+  thyme: 0.58,
+  curry_powder: 2.7,
+  garam_masala: 1.8,
+  ground_coriander: 1.8,
+  ground_cumin: 2.8,
+  ground_turmeric: 3.0,
+  cayenne_pepper: 2.5,
+  japanese_katsu_curry_powder: 2.7,
+  chinese_5_spice: 2.0,
+  red_chilli_powder: 2.7,
+  ground_nutmeg: 2.3,
+  mustard_powder: 2.5,
+  cinnamon: 2.3,
+  cardamom: 2.0,
+  ground_black_pepper: 2.5,
+  salt: 6.0
+};
+
+function tspToGrams(tsp, key) { return tsp * (gramsPerTsp[key] || 2.5); }
+function tbspToTsp(tbsp) { return tbsp * 3; }
+function cupsFlourToGrams(cups) { return cups * 120; }
+function cupsButterToGrams(cups) { return cups * 226; }
+function pinchSaltToGrams(pinches) { return pinches * 0.36; }
+function gramsGingerToInches(g) { return Math.round((g / 37.5) * 10) / 10; }
 
 // =======================
-// STRICT DATA MODEL (NO NORMALISATION)
+// RECIPE DATABASE
 // =======================
+// amount/unit are used for display aggregation.
+// purchaseAmount is used only for grocery bill calculation.
+// directCost is used where no shared pack-size rule was supplied.
 
 const recipes = {
+  nigerian_pepper_stew: {
+    name: "Nigerian Pepper Stew",
+    servings: 12,
+    ingredients: [
+      { id: "lean_diced_beef", name: "lean diced beef", amount: 1.1, unit: "kg", directCost: 12 },
+      { id: "red_onions", name: "red onions", amount: 4, unit: "", purchaseKey: "onions", purchaseAmount: 4 },
+      { id: "tomatoes", name: "tomatoes", amount: 9, unit: "", purchaseKey: "tomatoes", purchaseAmount: 9 },
+      { id: "red_peppers", name: "red peppers", amount: 6, unit: "", directCost: 4 },
+      { id: "scotch_bonnet_peppers", name: "scotch bonnet peppers", amountMin: 1, amountMax: 2, unit: "", directCost: 0.25 },
+      { id: "maggi", name: "Maggi seasoning cubes", amount: 4, unit: "", purchaseKey: "maggi", purchaseAmount: 4 },
+      { id: "rosemary", name: "rosemary", amount: 2, unit: "tsp", purchaseKey: "rosemary", purchaseAmount: tspToGrams(2, "rosemary") },
+      { id: "thyme", name: "thyme", amount: 3, unit: "tsp", purchaseKey: "thyme", purchaseAmount: tspToGrams(3, "thyme") },
+      { id: "curry_powder", name: "curry powder", amount: 2, unit: "tsp", purchaseKey: "curry_powder", purchaseAmount: tspToGrams(2, "curry_powder") },
+      { id: "salt", name: "salt", amount: 2, unit: "tsp", purchaseKey: "salt", purchaseAmount: tspToGrams(2, "salt") },
+      { id: "palm_oil", name: "palm oil", amount: 118, unit: "ml", displayNote: "1/2 cup", purchaseKey: "palm_oil", purchaseAmount: 118 },
+      { id: "fresh_basil", name: "fresh basil", amount: 1, unit: "packet", directCost: 0.52 }
+    ]
+  },
 
-"nigerian_pepper_stew": {
-name: "Nigerian Pepper Stew",
-servings: 12,
-ingredients: {
-"lean diced beef": {qty: "1.1 kg", cost: 12},
-"red onions": {qty: "4", cost: 1},
-"tomatoes": {qty: "9", cost: 2.1},
-"red peppers": {qty: "6", cost: 4},
-"scotch bonnet peppers": {qty: "1–2", cost: 0.25},
-"Maggi seasoning cubes": {qty: "4", cost: 2.5},
-"rosemary": {qty: "2 tsp", cost: 0.6},
-"thyme": {qty: "3 tsp", cost: 0.85},
-"curry powder": {qty: "2 tsp", cost: 1},
-"salt": {qty: "2 tsp", cost: 0.5},
-"palm oil": {qty: "1/2 cup (118 ml)", cost: 2.5},
-"fresh basil": {qty: "1 packet", cost: 0.52}
-}
-},
+  indian_butter_chicken: {
+    name: "Indian Butter Chicken",
+    servings: 15,
+    ingredients: [
+      { id: "chicken_breast", name: "chicken breast", amount: 2, unit: "kg", directCost: 12.5 },
+      { id: "red_onions", name: "red onions", amount: 4, unit: "medium", purchaseKey: "onions", purchaseAmount: 4 },
+      { id: "garlic_cloves", name: "garlic", amount: 11, unit: "cloves", displayOverride: "1 whole", purchaseKey: "garlic", purchaseAmount: 11 },
+      { id: "ginger", name: "ginger", amount: 4, unit: "inches", directCost: 0.75 },
+      { id: "red_chilli_peppers", name: "red chilli peppers", amountMin: 3, amountMax: 4, unit: "", directCost: 0.6 },
+      { id: "lemon", name: "lemon", amount: 1, unit: "", directCost: 0.4 },
+      { id: "fresh_parsley", name: "fresh parsley", amount: 1, unit: "packet", directCost: 0.52 },
+      { id: "salt", name: "salt", amount: 8, unit: "tsp", purchaseKey: "salt", purchaseAmount: tspToGrams(8, "salt") },
+      { id: "garam_masala", name: "garam masala", amount: 8, unit: "tsp", purchaseKey: "garam_masala", purchaseAmount: tspToGrams(8, "garam_masala") },
+      { id: "ground_coriander", name: "ground coriander", amount: 4, unit: "tsp", purchaseKey: "ground_coriander", purchaseAmount: tspToGrams(4, "ground_coriander") },
+      { id: "ground_cumin", name: "ground cumin", amount: 8, unit: "tsp", purchaseKey: "ground_cumin", purchaseAmount: tspToGrams(8, "ground_cumin") },
+      { id: "ground_turmeric", name: "ground turmeric", amount: 8, unit: "tsp", purchaseKey: "ground_turmeric", purchaseAmount: tspToGrams(8, "ground_turmeric") },
+      { id: "cayenne_pepper", name: "cayenne pepper", amount: 4, unit: "tsp", purchaseKey: "cayenne_pepper", purchaseAmount: tspToGrams(4, "cayenne_pepper") },
+      { id: "ground_black_pepper", name: "ground black pepper", amount: 2, unit: "tsp", purchaseKey: "ground_black_pepper", purchaseAmount: tspToGrams(2, "ground_black_pepper") },
+      { id: "butter", name: "salted butter", amount: 100, unit: "g", purchaseKey: "butter", purchaseAmount: 100 },
+      { id: "tomato_sauce", name: "tomato sauce", amount: 1000, unit: "ml", directCost: 1.5 },
+      { id: "olive_oil", name: "olive oil", amount: 177, unit: "ml", displayNote: "59 ml + 1 tbsp", purchaseKey: "olive_oil", purchaseAmount: 177 },
+      { id: "creamy_natural_yoghurt", name: "creamy natural yoghurt", amount: 237, unit: "ml", directCost: 0.6 },
+      { id: "double_cream", name: "double cream", amount: 600, unit: "ml", directCost: 2.8 },
+      { id: "cling_film", name: "cling film", amount: 1, unit: "box", directCost: 1 }
+    ]
+  },
 
-"indian_butter_chicken": {
-name: "Indian Butter Chicken",
-servings: 15,
-ingredients: {
-"chicken breast": {qty: "2 kg", cost: 12.5},
-"red onions": {qty: "4 medium", cost: 1},
-"garlic": {qty: "1 whole", cost: 0.5},
-"ginger": {qty: "4 inches", cost: 0.75},
-"red chilli peppers": {qty: "3–4", cost: 0.6},
-"lemon": {qty: "1", cost: 0.4},
-"fresh parsley": {qty: "1 packet", cost: 0.52},
-"salt": {qty: "8 tsp", cost: 0.5},
-"garam masala": {qty: "8 tsp", cost: 1},
-"ground coriander": {qty: "4 tsp", cost: 0.7},
-"ground cumin": {qty: "8 tsp", cost: 0.6},
-"ground turmeric": {qty: "8 tsp", cost: 0.6},
-"cayenne pepper": {qty: "4 tsp", cost: 0.6},
-"ground black pepper": {qty: "2 tsp", cost: 1.7},
-"salted butter": {qty: "100 g", cost: 2},
-"tomato sauce": {qty: "1000 ml", cost: 1.5},
-"olive oil": {qty: "177 ml", cost: 6},
-"creamy natural yoghurt": {qty: "237 ml", cost: 0.6},
-"double cream": {qty: "600 ml", cost: 2.8},
-"cling film": {qty: "1 box", cost: 1}
-}
-},
+  japanese_curry_easy: {
+    name: "Japanese curry (easy method)",
+    servings: 12,
+    ingredients: [
+      { id: "beef", name: "beef", amount: 1.1, unit: "kg", directCost: 12 },
+      { id: "potatoes", name: "potatoes", amount: 4, unit: "", directCost: 2 },
+      { id: "carrots", name: "carrots", amount: 6, unit: "", purchaseKey: "carrots", purchaseAmount: 6 },
+      { id: "brown_onions", name: "brown onions", amount: 2, unit: "", purchaseKey: "onions", purchaseAmount: 2 },
+      { id: "golden_curry_roux", name: "Golden curry roux blocks", amount: 1, unit: "pack", directCost: 3.05 },
+      { id: "salt", name: "salt", amount: 1, unit: "pinch", purchaseKey: "salt", purchaseAmount: pinchSaltToGrams(1) },
+      { id: "rosemary", name: "rosemary", amount: 1, unit: "tsp", purchaseKey: "rosemary", purchaseAmount: tspToGrams(1, "rosemary") },
+      { id: "spring_onion", name: "spring onion", amount: 1, unit: "bunch", directCost: 0.7, optional: true },
+      { id: "sesame_seeds", name: "sesame seeds", amount: 1, unit: "pack", directCost: 1.2, optional: true }
+    ]
+  },
 
-"japanese_curry_easy": {
-name: "Japanese curry (easy method)",
-servings: 12,
-ingredients: {
-"beef": {qty: "1.1 kg", cost: 12},
-"potatoes": {qty: "4", cost: 2},
-"carrots": {qty: "6", cost: 1.05},
-"brown onions": {qty: "2", cost: 0.7},
-"Golden curry roux blocks": {qty: "1 pack", cost: 3.05},
-"salt": {qty: "pinch", cost: 0.5},
-"rosemary": {qty: "1 tsp", cost: 0.6},
-"spring onion (optional)": {qty: "1 bunch", cost: 0.7},
-"sesame seeds (optional)": {qty: "1 pack", cost: £1.20}
-}
-},
+  japanese_curry_scratch: {
+    name: "Japanese curry (from scratch)",
+    servings: 12,
+    ingredients: [
+      { id: "chicken_breast_fillets", name: "chicken breast fillets", amount: 1.8, unit: "kg", directCost: 12 },
+      { id: "brown_onions", name: "brown onions", amount: 6, unit: "", purchaseKey: "onions", purchaseAmount: 6 },
+      { id: "carrots", name: "carrots", amount: 6, unit: "", purchaseKey: "carrots", purchaseAmount: 6 },
+      { id: "garlic_cloves", name: "garlic cloves", amount: 9, unit: "", purchaseKey: "garlic", purchaseAmount: 9 },
+      { id: "ginger", name: "ginger", amount: gramsGingerToInches(75), unit: "inches", displayNote: "75 g", directCost: 0.5 },
+      { id: "maggi", name: "Maggi seasoning cubes", amount: 5, unit: "", purchaseKey: "maggi", purchaseAmount: 5 },
+      { id: "japanese_katsu_curry_powder", name: "Japanese/Katsu curry powder", amount: 6, unit: "tbsp", purchaseKey: "japanese_katsu_curry_powder", purchaseAmount: tspToGrams(tbspToTsp(6), "japanese_katsu_curry_powder") },
+      { id: "chinese_5_spice", name: "Chinese 5 spice", amount: 6, unit: "tsp", purchaseKey: "chinese_5_spice", purchaseAmount: tspToGrams(6, "chinese_5_spice") },
+      { id: "red_chilli_powder", name: "red chilli powder", amount: 2, unit: "tbsp", purchaseKey: "red_chilli_powder", purchaseAmount: tspToGrams(tbspToTsp(2), "red_chilli_powder") },
+      { id: "salt", name: "salt", amount: 1, unit: "tsp", purchaseKey: "salt", purchaseAmount: tspToGrams(1, "salt") },
+      { id: "flour", name: "flour", amount: 0.5, unit: "cup", displayNote: "1/2 cup (118 ml)", purchaseKey: "flour", purchaseAmount: cupsFlourToGrams(0.5) },
+      { id: "soy_sauce", name: "soy sauce", amount: 3, unit: "tbsp", directCost: 0.6 },
+      { id: "honey", name: "honey", amount: 3, unit: "tbsp", directCost: 1 },
+      { id: "distilled_vinegar", name: "distilled vinegar", amount: 3, unit: "tsp", directCost: 0.4 },
+      { id: "spring_onion", name: "spring onion", amount: 1, unit: "bunch", directCost: 0.7, optional: true },
+      { id: "sesame_seeds", name: "sesame seeds", amount: 1, unit: "pack", directCost: 1.2, optional: true }
+    ]
+  },
 
-"japanese_curry_scratch": {
-name: "Japanese curry (from scratch)",
-servings: 12,
-ingredients: {
-"chicken breast fillets": {qty: "1.8 kg", cost: 12},
-"brown onions": {qty: "6", cost: 1},
-"carrots": {qty: "6", cost: 0.7},
-"garlic cloves": {qty: "9", cost: 0.5},
-"ginger": {qty: "75 g", cost: 0.5},
-"Maggi seasoning cube": {qty: "5", cost: 2.5},
-"Japanese/Katsu curry powder": {qty: "6 tbsp", cost: 3},
-"Chinese 5 spice": {qty: "6 tsp", cost: 1},
-"red chilli powder": {qty: "2 tbsp", cost: 0.6},
-"salt": {qty: "1 tsp", cost: 0.5},
-"flour": {qty: "1/2 cup (118ml)", cost: 0.7},
-"soy sauce": {qty: "3 tbsp", cost: 0.6},
-"honey": {qty: "3 tbsp", cost: 1},
-"distilled vinegar": {qty: "3 tsp", cost: 0.4},
-"spring onion (optional)": {qty: "1 bunch", cost: 0.7},
-"sesame seeds (optional)": {qty: "1 pack", cost: £1.20}
-}
-},
+  peanut_stew: {
+    name: "Peanut Stew",
+    servings: 11,
+    options: {
+      meat: [
+        { id: "chicken_drumsticks", name: "Chicken drumsticks", amount: 2, unit: "kg", directCost: 4.5 },
+        { id: "beef_goat_meat", name: "Beef/goat meat", amount: 1.1, unit: "kg", directCost: 12 }
+      ]
+    },
+    ingredients: [
+      { id: "smooth_peanut_butter", name: "smooth peanut butter", amount: 340, unit: "g", directCost: 2 },
+      { id: "tomatoes", name: "tomatoes", amount: 9, unit: "", purchaseKey: "tomatoes", purchaseAmount: 9 },
+      { id: "garlic_cloves", name: "garlic cloves", amount: 9, unit: "", purchaseKey: "garlic", purchaseAmount: 9 },
+      { id: "scotch_bonnet_peppers", name: "scotch bonnet peppers", amountMin: 1, amountMax: 2, unit: "", directCost: 0.25 },
+      { id: "red_onions", name: "red onions", amount: 4, unit: "", purchaseKey: "onions", purchaseAmount: 4 },
+      { id: "ginger", name: "ginger", amount: 6, unit: "inches", directCost: 0.7 },
+      { id: "ground_cumin", name: "ground cumin", amount: 3, unit: "tsp", purchaseKey: "ground_cumin", purchaseAmount: tspToGrams(3, "ground_cumin") },
+      { id: "ground_nutmeg", name: "ground nutmeg", amount: 3, unit: "tsp", purchaseKey: "ground_nutmeg", purchaseAmount: tspToGrams(3, "ground_nutmeg") },
+      { id: "maggi", name: "Maggi seasoning cubes", amount: 4, unit: "", purchaseKey: "maggi", purchaseAmount: 4 },
+      { id: "tomato_paste", name: "tomato paste", amount: 0.75, unit: "cup", displayNote: "3/4 cup", directCost: 0.7 },
+      { id: "fresh_baby_spinach", name: "fresh baby spinach", amount: 1, unit: "bag", directCost: 1 },
+      { id: "peanuts", name: "peanuts", amount: 1, unit: "packet", directCost: 1 }
+    ]
+  },
 
-"peanut_stew": {
-name: "Peanut Stew",
-servings: 11,
+  moqueca: {
+    name: "Brazilian Moqueca de Camarão",
+    servings: 8,
+    ingredients: [
+      { id: "shrimp", name: "shrimp", amount: 1, unit: "kg", directCost: 15 },
+      { id: "palm_oil", name: "palm oil", amount: 118, unit: "ml", displayNote: "1/2 cup", purchaseKey: "palm_oil", purchaseAmount: 118 },
+      { id: "red_bell_peppers", name: "red bell peppers", amount: 2, unit: "", purchaseKey: "mixed_bell_peppers", purchaseAmount: 2, pepperColour: "red" },
+      { id: "yellow_bell_peppers", name: "yellow bell peppers", amount: 2, unit: "", purchaseKey: "mixed_bell_peppers", purchaseAmount: 2, pepperColour: "yellow" },
+      { id: "green_bell_peppers", name: "green bell peppers", amount: 2, unit: "", purchaseKey: "mixed_bell_peppers", purchaseAmount: 2, pepperColour: "green" },
+      { id: "garlic_cloves", name: "garlic cloves", amount: 8, unit: "", purchaseKey: "garlic", purchaseAmount: 8 },
+      { id: "tomatoes", name: "tomatoes", amountMin: 5, amountMax: 6, unit: "", purchaseKey: "tomatoes", purchaseAmount: 6 },
+      { id: "full_fat_coconut_milk", name: "full fat coconut milk", amount: 800, unit: "ml", displayOverride: "2 x 400 ml cans", directCost: 1.6 },
+      { id: "lime", name: "lime", amount: 1, unit: "", directCost: 0.25 },
+      { id: "fresh_parsley", name: "fresh parsley", amount: 1, unit: "packet", directCost: 0.6 },
+      { id: "onions", name: "onions", amount: 2, unit: "", purchaseKey: "onions", purchaseAmount: 2 },
+      { id: "red_chilli_peppers", name: "red chillies", amount: 3, unit: "", directCost: 0.6 },
+      { id: "maggi", name: "Maggi/shrimp seasoning cubes", amount: 2, unit: "", purchaseKey: "maggi", purchaseAmount: 2 },
+      { id: "ground_coriander", name: "ground coriander", amount: 3, unit: "tsp", purchaseKey: "ground_coriander", purchaseAmount: tspToGrams(3, "ground_coriander") },
+      { id: "ground_cumin", name: "ground cumin", amount: 4, unit: "tsp", purchaseKey: "ground_cumin", purchaseAmount: tspToGrams(4, "ground_cumin") },
+      { id: "ground_black_pepper", name: "ground black pepper", amount: 3, unit: "tsp", purchaseKey: "ground_black_pepper", purchaseAmount: tspToGrams(3, "ground_black_pepper") },
+      { id: "salt", name: "salt", amount: 4, unit: "tsp", purchaseKey: "salt", purchaseAmount: tspToGrams(4, "salt") }
+    ]
+  },
 
-options: {
-meat: [
-{ name: "Chicken drumsticks", cost: 4.5 },
-{ name: "Beef/goat meat", cost: 12 }
-]
-},
+  fricassee: {
+    name: "French Fricassee",
+    servings: 17,
+    ingredients: [
+      { id: "chicken_drumsticks", name: "chicken drumsticks", amount: 2, unit: "kg", directCost: 4.5 },
+      { id: "carrots", name: "carrots", amount: 6, unit: "", purchaseKey: "carrots", purchaseAmount: 6 },
+      { id: "salt", name: "salt", amount: 1, unit: "tsp", purchaseKey: "salt", purchaseAmount: tspToGrams(1, "salt") },
+      { id: "ground_black_pepper", name: "ground black pepper", amount: 7, unit: "tsp", purchaseKey: "ground_black_pepper", purchaseAmount: tspToGrams(7, "ground_black_pepper") },
+      { id: "mustard_powder", name: "mustard powder", amount: 4, unit: "tsp", purchaseKey: "mustard_powder", purchaseAmount: tspToGrams(4, "mustard_powder") },
+      { id: "butter", name: "butter", amount: 113, unit: "g", displayNote: "1/2 cup", purchaseKey: "butter", purchaseAmount: 113 },
+      { id: "brown_onions", name: "brown onions", amount: 4, unit: "", purchaseKey: "onions", purchaseAmount: 4 },
+      { id: "mushrooms", name: "mushrooms", amount: 650, unit: "g", directCost: 1.7 },
+      { id: "thyme", name: "dried thyme", amount: 4, unit: "tsp", purchaseKey: "thyme", purchaseAmount: tspToGrams(4, "thyme") },
+      { id: "garlic_cloves", name: "garlic cloves", amount: 6, unit: "", purchaseKey: "garlic", purchaseAmount: 6 },
+      { id: "flour", name: "flour", amount: 2, unit: "cups", purchaseKey: "flour", purchaseAmount: cupsFlourToGrams(2) },
+      { id: "chicken_stock_cubes", name: "chicken stock cubes", amount: 4, unit: "", purchaseKey: "chicken_stock", purchaseAmount: 4 },
+      { id: "maggi", name: "Maggi seasoning cubes", amount: 5, unit: "", purchaseKey: "maggi", purchaseAmount: 5 },
+      { id: "double_cream", name: "double cream", amount: 600, unit: "ml", directCost: 2.8 },
+      { id: "fresh_thyme", name: "fresh thyme", amount: 1, unit: "packet", directCost: 0.52, optional: true },
+      { id: "lemon", name: "lemon", amount: 1, unit: "", directCost: 0.4, optional: true }
+    ]
+  },
 
-ingredients: {
-"chicken drumsticks OR beef/goat": {qty: "2 kg OR 1.1 kg", cost: 0},
-"smooth peanut butter": {qty: "340 g", cost: 2},
-"tomatoes": {qty: "9", cost: 2.1},
-"garlic cloves": {qty: "9", cost: 0.4},
-"scotch bonnet peppers": {qty: "1–2", cost: 0.25},
-"red onions": {qty: "4", cost: 1},
-"ginger": {qty: "6 inches", cost: 0.7},
-"ground cumin": {qty: "3 tsp", cost: 0.6},
-"ground nutmeg": {qty: "3 tsp", cost: 0.7},
-"Maggi seasoning cubes": {qty: "4", cost: 2.5},
-"tomato paste": {qty: "3/4 cup", cost: 0.7},
-"fresh baby spinach": {qty: "1 bag", cost: 1},
-"peanuts": {qty: "1 packet", cost: 1}
-}
-},
+  fesenjan: {
+    name: "Persian Fesenjan",
+    servings: 13,
+    ingredients: [
+      { id: "walnuts", name: "walnuts", amount: 800, unit: "g", directCost: 7 },
+      { id: "chicken_drumsticks", name: "chicken drumsticks", amount: 2, unit: "kg", directCost: 4.5 },
+      { id: "red_onions", name: "red onions", amount: 4, unit: "", purchaseKey: "onions", purchaseAmount: 4 },
+      { id: "olive_oil", name: "olive oil", amount: 59, unit: "ml", displayNote: "4 tbsp", purchaseKey: "olive_oil", purchaseAmount: 59 },
+      { id: "pomegranate_molasses", name: "pomegranate molasses", amount: 237, unit: "ml", displayNote: "1 cup", directCost: 4 },
+      { id: "chicken_stock_cubes", name: "chicken stock cubes", amount: 3, unit: "", purchaseKey: "chicken_stock", purchaseAmount: 3 },
+      { id: "maggi", name: "Maggi seasoning cubes", amount: 3, unit: "", purchaseKey: "maggi", purchaseAmount: 3 },
+      { id: "ground_black_pepper", name: "ground black pepper", amount: 4, unit: "tsp", purchaseKey: "ground_black_pepper", purchaseAmount: tspToGrams(4, "ground_black_pepper") },
+      { id: "ground_turmeric", name: "turmeric powder", amount: 2, unit: "tsp", purchaseKey: "ground_turmeric", purchaseAmount: tspToGrams(2, "ground_turmeric") },
+      { id: "cinnamon", name: "cinnamon powder", amount: 2, unit: "tsp", purchaseKey: "cinnamon", purchaseAmount: tspToGrams(2, "cinnamon"), optional: true },
+      { id: "cardamom", name: "cardamom powder", amount: 2, unit: "tsp", purchaseKey: "cardamom", purchaseAmount: tspToGrams(2, "cardamom"), optional: true },
+      { id: "cayenne_pepper", name: "cayenne pepper", amount: 1, unit: "tsp", purchaseKey: "cayenne_pepper", purchaseAmount: tspToGrams(1, "cayenne_pepper"), optional: true },
+      { id: "saffron", name: "saffron", amount: 1, unit: "tsp", directCost: 3 },
+      { id: "salt", name: "salt", amount: 3, unit: "tsp", purchaseKey: "salt", purchaseAmount: tspToGrams(3, "salt") },
+      { id: "lime", name: "lime", amount: 1, unit: "", directCost: 0.25 },
+      { id: "pomegranate", name: "pomegranate", amount: 1, unit: "", directCost: 1, optional: true }
+    ]
+  },
 
-"moqueca": {
-name: "Brazilian Moqueca de Camarão",
-servings: 8,
-ingredients: {
-"shrimp": {qty: "1 kg", cost: 15},
-"palm oil": {qty: "1/2 cup (118 ml)", cost: 2.5},
-"red bell peppers": {qty: "2", cost: 0},
-"yellow bell peppers": {qty: "2", cost: 0},
-"green bell peppers": {qty: "2", cost: 0},
-"garlic cloves": {qty: "8", cost: 0.4},
-"tomatoes": {qty: "5–6", cost: 2.1},
-"full fat coconut milk": {qty: "2 x 400 ml", cost: 1.6},
-"lime": {qty: "1", cost: 0.25},
-"fresh parsley": {qty: "1 packet", cost: 0.6},
-"onions": {qty: "2", cost: 1},
-"red chillies": {qty: "3", cost: 0.6},
-"Maggi/shrimp seasoning cubes": {qty: "2", cost: 2.5}
-}
-},
-
-"fricassee": {
-name: "French Fricassee",
-servings: 17,
-ingredients: {
-"chicken drumsticks": {qty: "2 kg", cost: 4.5},
-"carrots": {qty: "6", cost: 0.7},
-"salt": {qty: "1 tsp", cost: 0.5},
-"ground black pepper": {qty: "7 tsp", cost: 1.7},
-"mustard powder": {qty: "4 tsp", cost: 1.5},
-"butter": {qty: "1/2 cup", cost: 2},
-"brown onions": {qty: "4", cost: 1},
-"mushrooms": {qty: "650 g", cost: 1.7},
-"dried thyme": {qty: "4 tsp", cost: 0.85},
-"garlic cloves": {qty: "6", cost: 0.4},
-"flour": {qty: "2 cups", cost: 0.7},
-"chicken stock cubes": {qty: "4", cost: 0.7},
-"Maggi seasoning cubes": {qty: "5", cost: 2.5},
-"double cream": {qty: "600 ml", cost: 2.8},
-"fresh thyme (optional)": {qty: "1 packet", cost: 0.52},
-"lemon (optional)": {qty: "1", cost: £0.40}
-}
-},
-
-"fesenjan": {
-name: "Persian Fesenjan",
-servings: 13,
-ingredients: {
-"walnuts": {qty: "800 g", cost: 7},
-"chicken drumsticks": {qty: "2 kg", cost: 4.5},
-"red onions": {qty: "4", cost: 1},
-"olive oil": {qty: "4 tbsp (59 ml)", cost: 6},
-"pomegranate molasses": {qty: "1 cup (237 ml)", cost: 4},
-"chicken stock cubes": {qty: "3", cost: 0.7},
-"Maggi seasoning cubes": {qty: "3", cost: 2.5},
-"ground black pepper": {qty: "4 tsp", cost: 1.7},
-"ground turmeric": {qty: "2 tsp", cost: 0.6},
-"cinnamon (optional)": {qty: "2 tsp", cost: 0.7},
-"cardamom (optional)": {qty: "2 tsp", cost: 3},
-"cayenne pepper (optional)": {qty: "1 tsp", cost: 0.6},
-"saffron": {qty: "1 tsp", cost: 3},
-"salt": {qty: "3 tsp", cost: 0.5},
-"lime": {qty: "1", cost: 0.25},
-"pomegranate (optional)": {qty: "1", cost: 1}
-}
-},
-
-"succotash": {
-name: "American Succotash",
-servings: 9,
-ingredients: {
-"red onions": {qty: "3", cost: 1},
-"lima beans or butter beans": {qty: "2 cans", cost: 1.5},
-"bell peppers": {qty: "6", cost: 4},
-"chorizo sausage": {qty: "1 kg", cost: 6},
-"green beans": {qty: "1 packet", cost: 1.5},
-"sweet corn kernels": {qty: "4 cups", cost: 1.5},
-"courgettes": {qty: "3", cost: 2},
-"fresh parsley": {qty: "1 packet", cost: 0.52},
-"olive oil": {qty: "1/2 cup (118 ml)", cost: 6},
-"ground black pepper": {qty: "2 tsp", cost: 1.7},
-"Maggi seasoning cubes": {qty: "5", cost: 2.5},
-"salt": {qty: "pinch", cost: 0.5}
-}
-}
-
+  succotash: {
+    name: "American Succotash",
+    servings: 9,
+    ingredients: [
+      { id: "red_onions", name: "red onions", amount: 3, unit: "", purchaseKey: "onions", purchaseAmount: 3 },
+      { id: "lima_beans_or_butter_beans", name: "lima beans or butter beans", amount: 2, unit: "cans", directCost: 1.5 },
+      { id: "bell_peppers", name: "bell peppers", amount: 6, unit: "", directCost: 4 },
+      { id: "chorizo_sausage", name: "chorizo sausage", amount: 1, unit: "kg", directCost: 6 },
+      { id: "green_beans", name: "green beans", amount: 1, unit: "packet", directCost: 1.5 },
+      { id: "sweet_corn_kernels", name: "sweet corn kernels", amount: 4, unit: "cups", directCost: 1.5 },
+      { id: "courgettes", name: "courgettes", amount: 3, unit: "", directCost: 2 },
+      { id: "fresh_parsley", name: "fresh parsley", amount: 1, unit: "packet", directCost: 0.52 },
+      { id: "olive_oil", name: "olive oil", amount: 118, unit: "ml", displayNote: "1/2 cup", purchaseKey: "olive_oil", purchaseAmount: 118 },
+      { id: "ground_black_pepper", name: "ground black pepper", amount: 2, unit: "tsp", purchaseKey: "ground_black_pepper", purchaseAmount: tspToGrams(2, "ground_black_pepper") },
+      { id: "maggi", name: "Maggi seasoning cubes", amount: 5, unit: "", purchaseKey: "maggi", purchaseAmount: 5 },
+      { id: "salt", name: "salt", amount: 1, unit: "pinch", purchaseKey: "salt", purchaseAmount: pinchSaltToGrams(1) }
+    ]
+  }
 };
 
 // =======================
-// RENDER UI
+// UI
 // =======================
 
 const container = document.getElementById("recipes");
 
-for (let key in recipes) {
-const r = recipes[key];
+Object.keys(recipes).forEach(key => {
+  const r = recipes[key];
+  let html = `
+    <div class="recipe">
+      <label>
+        <input type="checkbox" value="${key}">
+        <strong>${r.name}</strong> <span class="small">(${r.servings} servings)</span>
+      </label>
+  `;
 
-let html = `
-<div class="recipe">
-<label>
-<input type="checkbox" value="${key}">
-<strong>${r.name}</strong>
-</label>
-`;
+  if (r.options?.meat) {
+    html += `<div class="option-row small">Choose meat for ${r.name}:</div>`;
+    html += `<select id="opt_${key}_meat">`;
+    r.options.meat.forEach((m, i) => {
+      html += `<option value="${i}">${m.name} — ${formatNumber(m.amount)} ${m.unit} (+£${m.directCost.toFixed(2)})</option>`;
+    });
+    html += `</select>`;
+  }
 
-if (r.options?.meat) {
-html += `<div class="small">Choose meat:</div>`;
-html += `<select id="opt_${key}">`;
-r.options.meat.forEach((m,i)=>{
-html += `<option value="${i}">${m.name} (+£${m.cost})</option>`;
+  html += `</div>`;
+  container.innerHTML += html;
 });
-html += `</select>`;
+
+// =======================
+// HELPERS
+// =======================
+
+function formatNumber(n) {
+  if (Number.isInteger(n)) return String(n);
+  return Number(n.toFixed(2)).toString();
 }
 
-html += `</div>`;
-container.innerHTML += html;
+function formatAmount(item) {
+  if (item.displayOverride && item.count === 1) return item.displayOverride;
+
+  if (item.amountMin !== undefined || item.amountMax !== undefined) {
+    const min = item.amountMin ?? item.amount ?? 0;
+    const max = item.amountMax ?? item.amount ?? 0;
+    if (min !== max) return `${formatNumber(min)}–${formatNumber(max)}${item.unit ? " " + item.unit : ""}`;
+    return `${formatNumber(max)}${item.unit ? " " + item.unit : ""}`;
+  }
+
+  if (item.unit === "pinch") {
+    return item.amount === 1 ? "pinch" : `${formatNumber(item.amount)} pinches`;
+  }
+
+  if (item.displayNote && item.count === 1) {
+    return `${item.displayNote}${item.amount && item.unit ? ` (${formatNumber(item.amount)} ${item.unit})` : ""}`;
+  }
+
+  return `${formatNumber(item.amount)}${item.unit ? " " + item.unit : ""}`;
+}
+
+function addDisplayItem(items, ingredient) {
+  const key = ingredient.id;
+
+  if (!items[key]) {
+    items[key] = {
+      id: ingredient.id,
+      name: ingredient.name,
+      amount: ingredient.amount || 0,
+      amountMin: ingredient.amountMin,
+      amountMax: ingredient.amountMax,
+      unit: ingredient.unit || "",
+      displayNote: ingredient.displayNote,
+      displayOverride: ingredient.displayOverride,
+      count: 1
+    };
+    return;
+  }
+
+  const existing = items[key];
+  existing.count += 1;
+
+  if (existing.unit === ingredient.unit) {
+    existing.amount = (existing.amount || 0) + (ingredient.amount || 0);
+    if (ingredient.amountMin !== undefined || existing.amountMin !== undefined) {
+      existing.amountMin = (existing.amountMin || existing.amount || 0) + (ingredient.amountMin || ingredient.amount || 0);
+      existing.amountMax = (existing.amountMax || existing.amount || 0) + (ingredient.amountMax || ingredient.amount || 0);
+    }
+    existing.displayOverride = null;
+    existing.displayNote = null;
+  } else {
+    // Fallback: preserve both units if a future ingredient uses a genuinely different unit.
+    const oldText = formatAmount(existing);
+    const newText = ingredient.displayOverride || ingredient.displayNote || `${formatNumber(ingredient.amount || 0)} ${ingredient.unit || ""}`.trim();
+    existing.name = ingredient.name;
+    existing.amount = 0;
+    existing.unit = "";
+    existing.displayOverride = `${oldText} + ${newText}`;
+  }
+}
+
+function addPurchaseAmount(purchases, ingredient) {
+  if (!ingredient.purchaseKey) return 0;
+  purchases[ingredient.purchaseKey] = (purchases[ingredient.purchaseKey] || 0) + (ingredient.purchaseAmount || 0);
+  return 0;
+}
+
+function calculatePackCost(purchases) {
+  let total = 0;
+  const lines = [];
+
+  Object.keys(purchases).sort().forEach(key => {
+    if (key === "mixed_bell_peppers") return;
+    const rule = purchaseRules[key];
+    if (!rule) return;
+    const amount = purchases[key];
+    const packs = Math.ceil(amount / rule.packSize);
+    const cost = packs * rule.price;
+    total += cost;
+    lines.push(`- ${rule.label}: buy ${packs} x ${rule.packLabel} = £${cost.toFixed(2)}`);
+  });
+
+  return { total, lines };
+}
+
+function calculateMixedPepperCost(colourCounts) {
+  const red = colourCounts.red || 0;
+  const yellow = colourCounts.yellow || 0;
+  const green = colourCounts.green || 0;
+  const packs = Math.max(red, yellow, green);
+  if (packs === 0) return { total: 0, line: null };
+  const cost = packs * purchaseRules.mixed_bell_peppers.price;
+  return {
+    total: cost,
+    line: `- mixed colour bell peppers: buy ${packs} x ${purchaseRules.mixed_bell_peppers.packLabel} = £${cost.toFixed(2)}`
+  };
 }
 
 // =======================
@@ -292,57 +480,79 @@ container.innerHTML += html;
 // =======================
 
 function generateList() {
+  const checked = [...document.querySelectorAll("input[type=checkbox]:checked")]
+    .filter(el => el.id !== "includeOptional")
+    .map(el => el.value);
 
-const checked = [...document.querySelectorAll("input[type=checkbox]:checked")]
-.map(e=>e.value);
+  const includeOptional = document.getElementById("includeOptional").checked;
 
-if(!checked.length){
-document.getElementById("output").innerText="Select recipes";
-return;
+  if (!checked.length) {
+    document.getElementById("output").innerText = "Select at least one recipe.";
+    return;
+  }
+
+  const displayItems = {};
+  const purchases = {};
+  const pepperColours = { red: 0, yellow: 0, green: 0 };
+  let directCost = 0;
+  let totalServings = 0;
+  const servingLines = [];
+
+  checked.forEach(recipeKey => {
+    const recipe = recipes[recipeKey];
+    totalServings += recipe.servings;
+    servingLines.push(`- ${recipe.name}: ${recipe.servings} servings`);
+
+    if (recipe.options?.meat) {
+      const select = document.getElementById(`opt_${recipeKey}_meat`);
+      const chosen = recipe.options.meat[Number(select.value)];
+      addDisplayItem(displayItems, chosen);
+      directCost += chosen.directCost;
+    }
+
+    recipe.ingredients.forEach(ingredient => {
+      if (ingredient.optional && !includeOptional) return;
+
+      addDisplayItem(displayItems, ingredient);
+
+      if (ingredient.pepperColour) {
+        pepperColours[ingredient.pepperColour] += ingredient.purchaseAmount || ingredient.amount || 0;
+      } else if (ingredient.purchaseKey) {
+        addPurchaseAmount(purchases, ingredient);
+      } else {
+        directCost += ingredient.directCost || 0;
+      }
+    });
+  });
+
+  const packCost = calculatePackCost(purchases);
+  const mixedPepperCost = calculateMixedPepperCost(pepperColours);
+  const totalCost = directCost + packCost.total + mixedPepperCost.total;
+
+  let out = "SHOPPING LIST\n\n";
+
+  Object.values(displayItems)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach(item => {
+      out += `- ${item.name}: ${formatAmount(item)}\n`;
+    });
+
+  out += "\nSERVINGS\n";
+  out += servingLines.join("\n");
+  out += `\n- Total servings: ${totalServings}\n`;
+
+  out += "\nESTIMATED GROCERY COST\n";
+  out += `- Direct item costs: £${directCost.toFixed(2)}\n`;
+  if (packCost.lines.length || mixedPepperCost.line) {
+    out += "- Pack-aware costs used:\n";
+    packCost.lines.forEach(line => { out += `${line}\n`; });
+    if (mixedPepperCost.line) out += `${mixedPepperCost.line}\n`;
+  }
+  out += `\nEstimated grocery bill: £${totalCost.toFixed(2)}`;
+  out += `\nCost per serving: £${(totalCost / totalServings).toFixed(2)}`;
+
+  document.getElementById("output").innerText = out;
 }
-
-let items = {};
-let totalCost = 0;
-let totalServings = 0;
-
-checked.forEach(r=>{
-
-const recipe = recipes[r];
-totalServings += recipe.servings;
-
-// meat option
-if(recipe.options?.meat){
-const sel = document.getElementById(`opt_${r}`);
-const choice = recipe.options.meat[sel.value];
-items[choice.name] = items[choice.name] || {qty:1,cost:choice.cost};
-items[choice.name].cost += choice.cost;
-totalCost += choice.cost;
-}
-
-// ingredients
-for(let k in recipe.ingredients){
-if(!items[k]) items[k]= {...recipe.ingredients[k]};
-else items[k].cost += recipe.ingredients[k].cost;
-
-totalCost += recipe.ingredients[k].cost;
-}
-
-});
-
-// OUTPUT
-let out="SHOPPING LIST\n\n";
-
-Object.keys(items).sort().forEach(k=>{
-out += `- ${k}: ${items[k].qty}\n`;
-});
-
-out += `\nTOTAL SERVINGS: ${totalServings}`;
-out += `\nESTIMATED COST: £${totalCost.toFixed(2)}`;
-out += `\nCOST PER SERVING: £${(totalCost/totalServings).toFixed(2)}`;
-
-document.getElementById("output").innerText=out;
-}
-
 </script>
 
 </body>
